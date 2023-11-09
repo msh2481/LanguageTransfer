@@ -5,7 +5,15 @@
 #let large-size = 12pt
 #let title-size = 16pt
 
-#let prose(ref) = cite(ref, form: "prose")
+#let note(text) = block(
+  fill: luma(240),
+  stroke: luma(100),
+  inset: 8pt,
+  radius: 4pt,
+  text
+)
+
+#set text(font: "Comic Mono")
 
 // This function gets your whole document as its `body` and formats
 // it as an article in the style of the American Mathematical Society.
@@ -44,7 +52,8 @@
   set document(title: title, author: names)
 
   // Set the body font. AMS uses the LaTeX font.
-  set text(size: normal-size, font: "New Computer Modern")
+  // set text(size: normal-size, font: "New Computer Modern")
+  set text(size: normal-size)
 
   // Configure the page.
   set page(
@@ -151,7 +160,7 @@
     v(20pt, weak: true)
     set text(large-size)
     show: pad.with(x: 35pt)
-    align(center, smallcaps([Abstract. ]))
+    align(center, smallcaps([Abstract ]))
     set text(normal-size)
     abstract
   }
