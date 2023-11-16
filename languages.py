@@ -3,14 +3,12 @@ from imports import *
 import pyarrow as pa
 import pyarrow.parquet as pq
 from tokenizers import (
-    decoders,
     models,
-    normalizers,
     pre_tokenizers,
-    processors,
-    trainers,
     Tokenizer,
 )
+from transformers import PreTrainedTokenizerFast
+
 %load_ext autoreload
 %autoreload 2
 
@@ -19,17 +17,23 @@ Even = Annotated[int, Is[lambda x: x % 2 == 0]]
 
 
 @typed
-def wordlevel_tokenizer(vocab: list[str]) -> Tokenizer:
-    if "[UNK]" not in vocab:
-        vocab = vocab + ["[UNK]"]
-    tokenizer = Tokenizer(models.WordLevel({word: i for i, word in enumerate(vocab)}))
-    tokenizer.pre_tokenizer = pre_tokenizers.Whitespace()
-    tokenizer.decoder = decoders.WordPiece()
-    return tokenizer
+def wordlevel_tokenizer(vocab: list[str]) -> PreTrainedTokenizerFast:
+    vocab += ["[UNK]", "[PAD]"]
+    model = models.WordLevel(
+        {word: i for i, word in enumerate(vocab)}, 
+        unk_token="[UNK]",
+    )
+    tokenizer = Tokenizer(model)
+    tokenizer.pre_tokenizer = pre_tokenizers.WhitespaceSplit()
+    return PreTrainedTokenizerFast(
+        tokenizer_object=tokenizer,
+        unk_token="[UNK]",
+        pad_token="[PAD]",
+    )
 
 
 @typed
-def dependencies_tokenizer(vocab_size: Even) -> Tokenizer:
+def dependencies_tokenizer(vocab_size: Even) -> PreTrainedTokenizerFast:
     vocab = [f"<{i//2+1}" if i % 2 == 0 else f"{i//2+1}>" for i in range(vocab_size)]
     return wordlevel_tokenizer(vocab)
 
@@ -39,7 +43,7 @@ def nested_dependencies_sequence(
     seq_len: Even,
     vocab_size: Even,
     max_len: Even,
-    tokenizer: Tokenizer,
+    tokenizer: PreTrainedTokenizerFast,
 ) -> Int[TT, "seq_len"]:
     """
     Returns a sequence of `seq_len` tokens padded to `max_len` (plus BOS token) and structured
@@ -48,13 +52,12 @@ def nested_dependencies_sequence(
     """
     p_open = 0.4
     open_types: deque[int] = deque()
-    data = t.full(size=(max_len + 1,), fill_value=tokenizer.pad_token_id)
-    data[0] = tokenizer.bos_token_id
-    for i in range(1, seq_len - 1):
+    data = t.full(size=(max_len,), fill_value=tokenizer.pad_token_id)
+    for i in range(seq_len):
         should_open = t.rand(size=()) < p_open
         must_open = not open_types
-        must_close = len(open_types) == seq_len - i - 1
-        if should_open or must_open and not must_close:
+        must_close = len(open_types) == seq_len - i
+        if (should_open or must_open) and not must_close:
             type = int(t.randint(low=0, high=vocab_size // 2, size=()))
             data[i] = 2 * type
             open_types.append(type)
@@ -67,7 +70,7 @@ def nested_dependencies_sequence(
 @typed
 def nested_dependencies_dataset(
     seq_number: int, max_len: Even, vocab_size: Even
-) -> tuple[Int[TT, "seqences n"], Tokenizer]:
+) -> Int[TT, "seqences n"]:
     tokenizer = dependencies_tokenizer(vocab_size)
     seq_len = t.randint(low=2, high=max_len // 2, size=(seq_number,)) * 2
     dataset = t.stack(
@@ -81,7 +84,7 @@ def nested_dependencies_dataset(
             for i in range(seq_number)
         ]
     )
-    return dataset, tokenizer
+    return dataset
 
 
 # @typed
@@ -93,19 +96,16 @@ def nested_dependencies_dataset(
 #             batch = create_record_batch(start, end)
 #             writer.write_batch(batch)
 
-# def test_nested():
-#     seed_everything(1)
-#     vocab_size = 40
-#     seq_len = 10
-#     seq_number = 5
-#     ids, tok = nested_dependencies_dataset(seq_number, seq_len, vocab_size)
-#     print(ids)
-#     print(*tok.decode(ids), sep="\n")
-#     print(tok.encode(tok.decode(ids)))
+def test_nested():
+    seed_everything(1)
+    vocab_size = 40
+    seq_len = 10
+    seq_number = 5
+    batch_ids = nested_dependencies_dataset(seq_number, seq_len, vocab_size)
+    tok = dependencies_tokenizer(vocab_size)
+    for ids in batch_ids:
+        print(*tok.convert_ids_to_tokens(ids), sep="\t")
+        assert (ids == tok(tok.decode(ids), return_tensors="pt")["input_ids"]).all()
 
 # %%
-# let's test dependency tokenizer
-s = "<1 <2 2> 1>"
-t = dependencies_tokenizer(10)
-print(t.encode(s))
-print(t.pad_token_id)
+test_nested()
