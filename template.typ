@@ -79,13 +79,13 @@
       h(10pt, weak: true)
     }
 
-    // Level 1 headings are centered and smallcaps.
-    // The other ones are run-in.
     set text(size: large-size, weight: 400)
-    smallcaps[
-      #number
-      #it.body
-    ]
+    if it.level == 1 {
+      smallcaps(it.body)
+    } else {
+      it.body
+    }
+
     v(10pt)
   }
 

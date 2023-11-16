@@ -1,16 +1,38 @@
-# %%
-from imports import *
-import pyarrow as pa
-import pyarrow.parquet as pq
-from tokenizers import (
-    models,
-    pre_tokenizers,
-    Tokenizer,
-)
-from transformers import PreTrainedTokenizerFast
+import os
+import random
+from collections import deque
+from typing import Annotated
 
-%load_ext autoreload
-%autoreload 2
+import numpy as np
+import pyarrow as pa  # type: ignore
+import pyarrow.parquet as pq  # type: ignore
+import torch as t
+from beartype import beartype as typed
+from beartype.typing import Callable
+from beartype.vale import Is
+from tokenizers import Tokenizer, models, pre_tokenizers  # type: ignore
+from tqdm import tqdm
+from transformers import PreTrainedTokenizerFast  # type: ignore
+from datasets import load_dataset  # type: ignore
+
+
+def seed_everything(seed):
+    """
+    Sets the seed for random, numpy and torch and torch.cuda.
+
+    Parameters:
+        seed (int): The seed value to set for the random number generators.
+
+    Returns:
+        None
+    """
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    t.manual_seed(seed)
+    t.cuda.manual_seed(seed)
+    t.backends.cudnn.benchmark = False
+    t.use_deterministic_algorithms(True)
 
 
 Even = Annotated[int, Is[lambda x: x % 2 == 0]]
@@ -20,7 +42,7 @@ Even = Annotated[int, Is[lambda x: x % 2 == 0]]
 def wordlevel_tokenizer(vocab: list[str]) -> PreTrainedTokenizerFast:
     vocab += ["[UNK]", "[PAD]"]
     model = models.WordLevel(
-        {word: i for i, word in enumerate(vocab)}, 
+        {word: i for i, word in enumerate(vocab)},
         unk_token="[UNK]",
     )
     tokenizer = Tokenizer(model)
@@ -42,70 +64,92 @@ def dependencies_tokenizer(vocab_size: Even) -> PreTrainedTokenizerFast:
 def nested_dependencies_sequence(
     seq_len: Even,
     vocab_size: Even,
-    max_len: Even,
     tokenizer: PreTrainedTokenizerFast,
-) -> Int[TT, "seq_len"]:
+) -> str:
     """
-    Returns a sequence of `seq_len` tokens padded to `max_len` (plus BOS token) and structured
-    as nesting brackets of `vocab_size` different types. Token `2 * x` is an
-    open bracket of type `x` and `2 * x + 1` is the corresponding closing one.
+    Returns a sequence of `seq_len` tokens structured as nesting brackets
+    of `vocab_size` different types. Token `2 * x` is an open bracket of
+    type `x` and `2 * x + 1` is the corresponding closing one.
     """
     p_open = 0.4
     open_types: deque[int] = deque()
-    data = t.full(size=(max_len,), fill_value=tokenizer.pad_token_id)
+    data = [0] * seq_len
     for i in range(seq_len):
         should_open = t.rand(size=()) < p_open
         must_open = not open_types
         must_close = len(open_types) == seq_len - i
         if (should_open or must_open) and not must_close:
-            type = int(t.randint(low=0, high=vocab_size // 2, size=()))
-            data[i] = 2 * type
-            open_types.append(type)
+            tp = int(t.randint(low=0, high=vocab_size // 2, size=()))
+            data[i] = 2 * tp
+            open_types.append(tp)
         else:
-            type = open_types.pop()
-            data[i] = 2 * type + 1
-    return data
+            tp = open_types.pop()
+            data[i] = 2 * tp + 1
+    return tokenizer.decode(data)
 
 
 @typed
-def nested_dependencies_dataset(
-    seq_number: int, max_len: Even, vocab_size: Even
-) -> Int[TT, "seqences n"]:
-    tokenizer = dependencies_tokenizer(vocab_size)
-    seq_len = t.randint(low=2, high=max_len // 2, size=(seq_number,)) * 2
-    dataset = t.stack(
-        [
-            nested_dependencies_sequence(
-                seq_len=int(seq_len[i]),
-                vocab_size=vocab_size,
-                max_len=max_len,
-                tokenizer=tokenizer,
-            )
-            for i in range(seq_number)
-        ]
-    )
-    return dataset
+def nested_dependencies_batch(
+    max_len: Even, vocab_size: Even
+) -> Callable[[int, int], pa.RecordBatch]:
+    def generator(start: int, end: int) -> pa.RecordBatch:
+        num_sequences = end - start
+        seq_len = t.randint(low=1, high=max_len // 2, size=(num_sequences,)) * 2
+        tokenizer = dependencies_tokenizer(vocab_size)
+        return pa.RecordBatch.from_arrays(
+            [
+                pa.array(
+                    nested_dependencies_sequence(
+                        seq_len=int(seq_len[i]),
+                        vocab_size=vocab_size,
+                        tokenizer=tokenizer,
+                    )
+                    for i in range(num_sequences)
+                )
+            ],
+            ["text"],
+        )
+
+    return generator
 
 
-# @typed
-# def write_to_parquet(output_file, batch_size, total_size):
-#     schema = pa.schema([pa.field('number_str', pa.string())])
-#     with pq.ParquetWriter(output_file, schema) as writer:
-#         for start in range(0, total_size, batch_size):
-#             end = min(start + batch_size, total_size)
-#             batch = create_record_batch(start, end)
-#             writer.write_batch(batch)
+@typed
+def write_to_parquet(
+    output_file: str,
+    batch_size: int,
+    total_size: int,
+    generator: Callable[[int, int], pa.RecordBatch],
+):
+    schema = pa.schema([pa.field("text", pa.string())])
+    with pq.ParquetWriter(output_file, schema) as writer:
+        for start in tqdm(range(0, total_size, batch_size)):
+            end = min(start + batch_size, total_size)
+            batch = generator(start, end)
+            writer.write_batch(batch)
 
-def test_nested():
-    seed_everything(1)
-    vocab_size = 40
-    seq_len = 10
-    seq_number = 5
-    batch_ids = nested_dependencies_dataset(seq_number, seq_len, vocab_size)
-    tok = dependencies_tokenizer(vocab_size)
-    for ids in batch_ids:
-        print(*tok.convert_ids_to_tokens(ids), sep="\t")
-        assert (ids == tok(tok.decode(ids), return_tensors="pt")["input_ids"]).all()
 
-# %%
-test_nested()
+# def test_nested():
+#     seed_everything(1)
+#     dataset = load_dataset("Mlxa/nested_small")["train"]
+#     tok = dependencies_tokenizer(vocab_size=40)
+#     for sample in dataset:
+#         ids = tok(sample["text"])["input_ids"]
+#         print(sample["text"])
+#         print(ids)
+#         back = tok.decode(ids)
+#         assert back == sample["text"]
+
+# test_nested()
+
+write_to_parquet(
+    output_file="train.parquet",
+    batch_size=512,
+    total_size=4 * 10**6,
+    generator=nested_dependencies_batch(max_len=512, vocab_size=500),
+)
+write_to_parquet(
+    output_file="test.parquet",
+    batch_size=512,
+    total_size=10**4,
+    generator=nested_dependencies_batch(max_len=512, vocab_size=500),
+)
