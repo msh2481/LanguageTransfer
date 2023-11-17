@@ -26,9 +26,8 @@ Take a single model, something like `GPT-2` or `TinyStories`. Pre-train it on di
 *L1*:
 - TinyStories
 - Baseline: no pretraining, but mean and std matched to pretrained model
-- Flat dependencies: `<1 <2 <3 2> 3> 1>`
 - Nested dependencies: `<1 <2 <3 3> 2> 1>`
-- Shuffle: `0 3 1 2 , 8 9 7 6 , 11 8 9 10`
+- Flat dependencies: `<1 <2 <3 2> 3> 1>`
 - Flat shuffle: `<0 <3 3> <1 <2 1> 2> 0> <8 <7 7> <9 9> <6 6> 8> ...`
 
 *L2*:
