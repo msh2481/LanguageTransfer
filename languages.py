@@ -201,24 +201,25 @@ def test_nested():
             last_pos[id] = i
 
 
-# test_nested()
+if __name__ == "__main__":
+    # test_nested()
 
-seq_len = 512
-group_len = 8
-vocab_size = 500
-tokenizer = dependencies_tokenizer(vocab_size=vocab_size)
-generator = flat_shuffle_sequence
-batch_generator = generate_batch(generator, seq_len, group_len, vocab_size, tokenizer)
+    seq_len = 512
+    group_len = 8
+    vocab_size = 500
+    tokenizer = dependencies_tokenizer(vocab_size=vocab_size)
+    generator = flat_shuffle_sequence
+    batch_generator = generate_batch(generator, seq_len, group_len, vocab_size, tokenizer)
 
-write_to_parquet(
-    output_file="train.parquet",
-    batch_size=10**3,
-    total_size=2 * 10**6,
-    generator=batch_generator,
-)
-write_to_parquet(
-    output_file="test.parquet",
-    batch_size=10**3,
-    total_size=10**4,
-    generator=batch_generator,
-)
+    write_to_parquet(
+        output_file="train.parquet",
+        batch_size=10**3,
+        total_size=2 * 10**6,
+        generator=batch_generator,
+    )
+    write_to_parquet(
+        output_file="test.parquet",
+        batch_size=10**3,
+        total_size=10**4,
+        generator=batch_generator,
+    )

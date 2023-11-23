@@ -17,10 +17,15 @@ from tqdm import tqdm
 from datasets import load_dataset, DatasetDict
 from transformers import AutoTokenizer, AutoModelForCausalLM, Trainer, TrainingArguments
 
+from languages import dependencies_tokenizer
+
+%load_ext autoreload
+%autoreload 2
+
 # %%
 dataset = load_dataset("Mlxa/nested")
 model_name = "roneneldan/TinyStories-8M"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer = dependencies_tokenizer(vocab_size=500)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
 # %%
@@ -35,7 +40,7 @@ def tokenize_function(example: Mapping[str, str | int]) -> Mapping[str, list[int
     result["labels"] = result["input_ids"]
     return result
 
-subset_size = 30000
+subset_size = 3000
 subset = dataset["train"].select(range(subset_size))
 tokenized = subset.map(tokenize_function, batched=False).remove_columns(["text"])
 
@@ -61,24 +66,25 @@ def show_string_with_weights(s: list[str], w: list[float] | Float[TT, "seq"]) ->
 @typed
 def sample_and_logprobs(sample: Mapping[str, list[int]]) -> None:
     model.cuda()
+    gen_length = 10
     with t.no_grad():
         inputs = {k: t.tensor([v], device="cuda") for k, v in sample.items()}
         ids = inputs["input_ids"][0]
-        pos = next(i for i in range(len(ids)) if ids[i] == sep_id)
-        pad = next((i for i in range(pos, len(ids)) if ids[i] == tokenizer.pad_token_id), len(ids))
-        truncated = {k: v[:, :pos+1] for k, v in inputs.items()}
+        pos = len(ids) - gen_length
+        pad = len(ids)
+        truncated = {k: v[:, :pos] for k, v in inputs.items()}
         sampled_tokens = (
             model.generate(
                 **truncated,
-                max_new_tokens=6,
+                max_new_tokens=gen_length,
                 pad_token_id=tokenizer.pad_token_id,
-                bad_words_ids=[[tokenizer.eos_token_id]],
+                bad_words_ids=[[tokenizer.pad_token_id]],
                 do_sample=True,
             )[0]
             .detach()
             .cpu()
         )
-        without_prompt = tokenizer.decode(sampled_tokens[pos+1:])
+        without_prompt = tokenizer.decode(sampled_tokens[pos:])
 
         output = model(**inputs)
         loss = output.loss.cpu().detach()
@@ -87,9 +93,9 @@ def sample_and_logprobs(sample: Mapping[str, list[int]]) -> None:
         ).squeeze(0)
 
         labels: Int[TT, "seq 1"] = inputs["input_ids"][0, 1:].cpu().unsqueeze(-1)
-        lp_per_token: Float[TT, "seq"] = logprobs[:-1].gather(-1, labels).squeeze(-1)[pos+1:pad]
+        lp_per_token: Float[TT, "seq"] = logprobs[:-1].gather(-1, labels).squeeze(-1)[pos - 1:]
         weights = F.tanh(-lp_per_token)  # 0 for perfect prediction, 1 for infinite loss
-        tokens = [tokenizer.decode(i) for i in inputs["input_ids"][0, pos+1:pad]]
+        tokens = [tokenizer.decode(i) for i in ids[pos:]]
 
         show_string_with_weights(tokens, weights)
         print(without_prompt)
@@ -103,11 +109,11 @@ for sample in tokenized.select(range(32)):
 training_args = TrainingArguments(
     output_dir="trainer",
     fp16=True,
-    per_device_train_batch_size=1,
+    per_device_train_batch_size=8,
     optim="adafactor",
     learning_rate=5e-6,
     logging_steps=10,
-    num_train_epochs=1,
+    num_train_epochs=10,
     save_total_limit=1,
 )
 trainer = Trainer(
@@ -115,9 +121,11 @@ trainer = Trainer(
     args=training_args,
     train_dataset=tokenized,
 )
+trainer.train()
 
 # %%
-for sample in tokenized.select(range(32)):
+for sample in tokenized.select(
+    range(32)):
     sample_and_logprobs(sample)
 
 # %%
@@ -126,4 +134,4 @@ for sample in tokenized.select(range(32)):
 # %%
 import gc
 gc.collect()
-t.cuda.empty_cache(
+t.cuda.empty_cache()
