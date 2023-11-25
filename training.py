@@ -16,11 +16,24 @@ from typing import Mapping
 from tqdm import tqdm
 from datasets import load_dataset, DatasetDict
 from transformers import AutoTokenizer, AutoModelForCausalLM, Trainer, TrainingArguments
+from dvclive.huggingface import DVCLiveCallback
+from IPython.display import clear_output
 
 from languages import dependencies_tokenizer
 
 %load_ext autoreload
 %autoreload 2
+
+# %%
+def fetch_or_ask(var: str) -> str:
+    if var not in os.environ:
+        val = input(f"{var}: ")
+        clear_output()
+        os.environ[var] = val
+    return os.environ[var]
+
+gdrive_token = fetch_or_ask("GDRIVE_CREDENTIALS_DATA")
+os.environ["DVC_STUDIO_TOKEN"] = "isat_1mr9HNvqAB6xw8OJ3dXe5O9vMaKol59LCoA5gGP3eLY8NoSF8"
 
 # %%
 dataset = load_dataset("Mlxa/nested")
@@ -121,11 +134,11 @@ trainer = Trainer(
     args=training_args,
     train_dataset=tokenized,
 )
+trainer.add_callback(DVCLiveCallback())
 trainer.train()
 
 # %%
-for sample in tokenized.select(
-    range(32)):
+for sample in tokenized.select(range(32)):
     sample_and_logprobs(sample)
 
 # %%

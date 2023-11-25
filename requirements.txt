@@ -12,3 +12,5 @@ transformers[torch]>=4.34.0
 torch>=2.1.0
 tqdm>=4.66.1
 pyarrow>=9.0.0
+dvc[gdrive]>= 3.28.0
+dvclive>=3.2.0
