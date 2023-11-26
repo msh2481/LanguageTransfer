@@ -1,6 +1,6 @@
 {
-    "loss": 9.686,
-    "learning_rate": 4.937333333333334e-06,
-    "epoch": 0.13,
-    "step": 4
+    "loss": 3.3176,
+    "learning_rate": 0.00097931,
+    "epoch": 0.02,
+    "step": 4137
 }

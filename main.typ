@@ -207,3 +207,8 @@ Example word:
 #for value in s.split() {
     text(raw(value + " "), fill: get_color(value), weight: 400, size: 6pt)
 }
+
+= Training
+
+nested: 41380 steps out of 2M, because the results stagnated and 
+were near the theoretical optimum.

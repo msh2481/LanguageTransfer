@@ -14,6 +14,7 @@ from torch import Tensor as TT
 from jaxtyping import Float, Int, Bool
 from typing import Mapping
 from tqdm import tqdm
+from itertools import islice
 from datasets import load_dataset, DatasetDict
 from transformers import AutoTokenizer, AutoModelForCausalLM, Trainer, TrainingArguments
 from dvclive.huggingface import DVCLiveCallback
@@ -42,6 +43,11 @@ tokenizer = dependencies_tokenizer(vocab_size=500)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
 # %%
+model.resize_token_embeddings(len(tokenizer))
+for layer in model.parameters():
+    layer.data = t.randn_like(layer.data) * 0.01
+
+# %%
 tokens_sample = tokenizer(dataset["train"][0]["text"])["input_ids"]
 print(len(tokens_sample))
 print(tokens_sample[:10])
@@ -53,9 +59,9 @@ def tokenize_function(example: Mapping[str, str | int]) -> Mapping[str, list[int
     result["labels"] = result["input_ids"]
     return result
 
-subset_size = 3000
-subset = dataset["train"].select(range(subset_size))
-tokenized = subset.map(tokenize_function, batched=False).remove_columns(["text"])
+subset_size = 2000000
+subset = dataset["train"].select(range(subset_size)).to_iterable_dataset()
+tokenized = subset.map(tokenize_function, batched=True).remove_columns(["text"])
 
 # %%
 @typed
@@ -115,7 +121,7 @@ def sample_and_logprobs(sample: Mapping[str, list[int]]) -> None:
 
 
 # %%
-for sample in tokenized.select(range(32)):
+for sample in islice(tokenized, 32):
     sample_and_logprobs(sample)
 
 # %%
@@ -123,10 +129,12 @@ training_args = TrainingArguments(
     output_dir="trainer",
     fp16=True,
     per_device_train_batch_size=8,
-    optim="adafactor",
-    learning_rate=5e-6,
+    optim="adamw_torch_fused",
+    torch_compile=False,
+    learning_rate=1e-3,
     logging_steps=10,
-    num_train_epochs=10,
+    num_train_epochs=1,
+    max_steps=subset_size,
     save_total_limit=1,
 )
 trainer = Trainer(
@@ -138,8 +146,18 @@ trainer.add_callback(DVCLiveCallback())
 trainer.train()
 
 # %%
-for sample in tokenized.select(range(32)):
+for sample in islice(tokenized, 32):
     sample_and_logprobs(sample)
+
+# %%
+from huggingface_hub import notebook_login
+
+notebook_login()
+
+# %%
+name = "brackets-flat"
+model.push_to_hub(name)
+tokenizer.push_to_hub(name)
 
 # %%
 1 / 0
