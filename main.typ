@@ -208,3 +208,12 @@ Example word:
 #for value in s.split() {
     text(raw(value + " "), fill: get_color(value), weight: 400, size: 6pt)
 }
+
+= Experiments
+
+Pre-training:
+- Finished early, when the training stagnated and loss came close to theoretical optimum.
+
+Fine-tunings:
+nested -> flat:
+4.412 - 4.139 - 4.075

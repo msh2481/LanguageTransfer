@@ -144,7 +144,7 @@ def train(batch_size: int, lr: float) -> None:
         per_device_train_batch_size=batch_size,
         torch_compile=False,
         learning_rate=lr,
-        logging_steps=1,
+        logging_steps=10,
         num_train_epochs=1,
         max_steps=train_size // batch_size,
         save_total_limit=1,
@@ -162,7 +162,7 @@ def train(batch_size: int, lr: float) -> None:
 @typed
 def evaluate(n_samples: int) -> None:
     losses = []
-    for sample in islice(tokenized_train, n_samples):
+    for sample in islice(tokenized_test, n_samples):
         losses.append(sample_and_logprobs(sample))
     mean_loss = sum(losses) / len(losses)
     print(f"Mean loss: {mean_loss:.3f}")
@@ -170,6 +170,8 @@ def evaluate(n_samples: int) -> None:
 # %%
 # Fine-tuning only embeddings:
 train(batch_size=8, lr=1e-2)
+
+# %%
 evaluate(n_samples=32)
 
 # %%
@@ -179,6 +181,8 @@ for name, param in model.named_parameters():
         print(f"{name} unfrozen")
         param.requires_grad = True
 train(batch_size=8, lr=2e-3)
+
+# %%
 evaluate(n_samples=32)
 
 # %%
@@ -187,7 +191,9 @@ for name, param in model.named_parameters():
     if "h.7" in name:
         param.requires_grad = True
 train(batch_size=8, lr=1e-3)
-evaluate()
+
+# %%
+evaluate(n_samples=32)
 
 # %%
 for sample in islice(tokenized_train, 32):
