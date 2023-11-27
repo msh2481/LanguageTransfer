@@ -28,6 +28,7 @@ Take a single model, something like `GPT-2` or `TinyStories`. Pre-train it on di
 - Baseline: no pretraining, but mean and std matched to pretrained model
 - Nested dependencies: `<1 <2 <3 3> 2> 1>`
 - Flat shuffle: `<0 <3 3> <1 <2 1> 2> 0> <8 <7 7> <9 9> <6 6> 8> ...`
+- Grammar induction: (have both recursive and context-free components): `A B A C A B A # a x b b a x c a x ...`
 
 *L2*:
 - Everything from L1
@@ -207,13 +208,3 @@ Example word:
 #for value in s.split() {
     text(raw(value + " "), fill: get_color(value), weight: 400, size: 6pt)
 }
-
-= Training
-
-nested (losel-nock): 41380 steps out of 2M, because the results stagnated and 
-were near the theoretical optimum.
-
-flat (forty-says): 64000 steps.
-
-flat_shuffle (sappy-junk): here plots will be compressed x5, because I increased
-logging interval.
