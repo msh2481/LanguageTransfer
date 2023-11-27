@@ -37,7 +37,7 @@ gdrive_token = fetch_or_ask("GDRIVE_CREDENTIALS_DATA")
 os.environ["DVC_STUDIO_TOKEN"] = "isat_1mr9HNvqAB6xw8OJ3dXe5O9vMaKol59LCoA5gGP3eLY8NoSF8"
 
 # %%
-dataset = load_dataset("Mlxa/nested")
+dataset = load_dataset("Mlxa/flat_shuffle")
 model_name = "roneneldan/TinyStories-8M"
 tokenizer = dependencies_tokenizer(vocab_size=500)
 model = AutoModelForCausalLM.from_pretrained(model_name)
@@ -55,11 +55,11 @@ print(tokens_sample[:10])
 # %%
 @typed
 def tokenize_function(example: Mapping[str, str | int]) -> Mapping[str, list[int]]:
-    result = tokenizer(example["text"])
+    result = tokenizer(example["text"], max_length=512, padding='max_length')
     result["labels"] = result["input_ids"]
     return result
 
-subset_size = 2000000
+subset_size = 60000
 subset = dataset["train"].select(range(subset_size)).to_iterable_dataset()
 tokenized = subset.map(tokenize_function, batched=True).remove_columns(["text"])
 
@@ -106,7 +106,6 @@ def sample_and_logprobs(sample: Mapping[str, list[int]]) -> None:
         without_prompt = tokenizer.decode(sampled_tokens[pos:])
 
         output = model(**inputs)
-        loss = output.loss.cpu().detach()
         logprobs: Float[TT, "seq vocab"] = F.log_softmax(
             output.logits.cpu().detach(), dim=-1
         ).squeeze(0)
@@ -125,16 +124,17 @@ for sample in islice(tokenized, 32):
     sample_and_logprobs(sample)
 
 # %%
+batch_size = 8
+
 training_args = TrainingArguments(
     output_dir="trainer",
     fp16=True,
-    per_device_train_batch_size=8,
-    optim="adamw_torch_fused",
+    per_device_train_batch_size=batch_size,
     torch_compile=False,
     learning_rate=1e-3,
-    logging_steps=10,
+    logging_steps=50,
     num_train_epochs=1,
-    max_steps=subset_size,
+    max_steps=subset_size//batch_size,
     save_total_limit=1,
 )
 trainer = Trainer(
@@ -155,9 +155,13 @@ from huggingface_hub import notebook_login
 notebook_login()
 
 # %%
-name = "brackets-flat"
+name = "brackets-flat_shuffle"
 model.push_to_hub(name)
 tokenizer.push_to_hub(name)
+
+# %%
+for p in model.parameters():
+    print(p.dtype, p.device)
 
 # %%
 1 / 0

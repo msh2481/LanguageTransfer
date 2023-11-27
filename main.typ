@@ -210,5 +210,10 @@ Example word:
 
 = Training
 
-nested: 41380 steps out of 2M, because the results stagnated and 
+nested (losel-nock): 41380 steps out of 2M, because the results stagnated and 
 were near the theoretical optimum.
+
+flat (forty-says): 64000 steps.
+
+flat_shuffle (sappy-junk): here plots will be compressed x5, because I increased
+logging interval.
