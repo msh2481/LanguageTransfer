@@ -35,8 +35,8 @@ os.environ[
 ] = "isat_1mr9HNvqAB6xw8OJ3dXe5O9vMaKol59LCoA5gGP3eLY8NoSF8"
 
 # %%
-dataset = load_dataset("Mlxa/flat", streaming=True)
-model_name = "Mlxa/brackets-nested"
+model_name = "Mlxa/brackets-flat"
+dataset = load_dataset("Mlxa/nested", streaming=True)
 tokenizer = dependencies_tokenizer(vocab_size=500)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 

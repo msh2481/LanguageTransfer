@@ -216,4 +216,6 @@ Pre-training:
 
 Fine-tunings:
 nested -> flat:
-4.412 - 4.139 - 4.075
+4.41 - 4.14 - 4.08 vs 3.78
+flat -> nested:
+3.47 - 3.34 - 3.34  vs 3.32
