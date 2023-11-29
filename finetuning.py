@@ -38,7 +38,8 @@ os.environ[
 model_name = "Mlxa/brackets-flat_shuffle"
 dataset = load_dataset("roneneldan/TinyStories", streaming=True)
 # tokenizer = dependencies_tokenizer(vocab_size=500)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained("roneneldan/TinyStories-8M")
+tokenizer.pad_token = tokenizer.eos_token
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
 # %%
@@ -55,7 +56,7 @@ print(tokens_sample[:10])
 # %%
 @typed
 def tokenize_function(example: Mapping[str, str | int]) -> Mapping[str, list[int]]:
-    result = tokenizer(example["text"])
+    result = tokenizer(example["text"], max_length=128, padding='max_length', truncation=True)
     result["labels"] = result["input_ids"]
     return result
 
@@ -69,7 +70,7 @@ tokenized_train = (
     .take(train_size)
 )
 tokenized_test = (
-    dataset["test"]
+    dataset["validation"]
     .map(tokenize_function, batched=True)
     .remove_columns(["text"])
     .take(test_size)
@@ -197,6 +198,12 @@ train(batch_size=8, lr=1e-3)
 evaluate(n_samples=32)
 
 # %%
+# Fine-tuning all layers
+for param in model.parameters():
+    param.requires_grad = True
+train(batch_size=8, lr=1e-3)
+
+# %%
 for sample in islice(tokenized_train, 32):
     sample_and_logprobs(sample)
 
@@ -205,6 +212,7 @@ from huggingface_hub import notebook_login
 
 notebook_login()
 
+# %%
 name = input("Model name, e.g. brackets-flat_shuffle: ")
 model.push_to_hub(name)
 tokenizer.push_to_hub(name)
