@@ -36,7 +36,7 @@ os.environ[
 
 # %%
 model_name = "Mlxa/brackets-flat"
-dataset = load_dataset("Mlxa/nested", streaming=True)
+dataset = load_dataset("Mlxa/flat_shuffle", streaming=True)
 tokenizer = dependencies_tokenizer(vocab_size=500)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
