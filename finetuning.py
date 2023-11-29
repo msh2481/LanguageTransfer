@@ -10,7 +10,7 @@ from jaxtyping import Float, Int
 from typing import Mapping
 from itertools import islice
 from datasets import load_dataset
-from transformers import AutoModelForCausalLM, Trainer, TrainingArguments
+from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
 from dvclive.huggingface import DVCLiveCallback
 from IPython.display import clear_output
 
@@ -35,9 +35,10 @@ os.environ[
 ] = "isat_1mr9HNvqAB6xw8OJ3dXe5O9vMaKol59LCoA5gGP3eLY8NoSF8"
 
 # %%
-model_name = "Mlxa/brackets-flat"
-dataset = load_dataset("Mlxa/flat_shuffle", streaming=True)
-tokenizer = dependencies_tokenizer(vocab_size=500)
+model_name = "Mlxa/brackets-flat_shuffle"
+dataset = load_dataset("roneneldan/TinyStories", streaming=True)
+# tokenizer = dependencies_tokenizer(vocab_size=500)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
 # %%

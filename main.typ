@@ -221,3 +221,5 @@ flat -> nested:
 3.47 - 3.34 - 3.34  vs 3.32
 flat -> flat_shuffle:
 2.46 - 2.36 - 2.15 vs 2.00
+flat_shuffle -> flat:
+3.82 - 3.80 - 3.76 vs 3.78
