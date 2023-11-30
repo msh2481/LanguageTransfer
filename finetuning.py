@@ -35,11 +35,11 @@ os.environ[
 ] = "isat_1mr9HNvqAB6xw8OJ3dXe5O9vMaKol59LCoA5gGP3eLY8NoSF8"
 
 # %%
-model_name = "roneneldan/TinyStories-8M"
-dataset = load_dataset("Mlxa/flat_shuffle", streaming=True)
-tokenizer = dependencies_tokenizer(vocab_size=500)
-# tokenizer = AutoTokenizer.from_pretrained("roneneldan/TinyStories-8M")
-# tokenizer.pad_token = tokenizer.eos_token
+model_name = "Mlxa/brackets-nested"
+dataset = load_dataset("roneneldan/TinyStories", streaming=True)
+# tokenizer = dependencies_tokenizer(vocab_size=500)
+tokenizer = AutoTokenizer.from_pretrained("roneneldan/TinyStories-8M")
+tokenizer.pad_token = tokenizer.eos_token
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
 # %%
@@ -56,7 +56,7 @@ print(tokens_sample[:10])
 # %%
 @typed
 def tokenize_function(example: Mapping[str, str | int]) -> Mapping[str, list[int]]:
-    result = tokenizer(example["text"])
+    result = tokenizer(example["text"], max_length=128, padding="max_length", truncation=True)
     result["labels"] = result["input_ids"]
     return result
 
@@ -70,7 +70,7 @@ tokenized_train = (
     .take(train_size)
 )
 tokenized_test = (
-    dataset["test"]
+    dataset["validation"]
     .map(tokenize_function, batched=True)
     .remove_columns(["text"])
     .take(test_size)

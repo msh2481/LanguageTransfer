@@ -1,13 +1,13 @@
 {
-    "loss": 2.1239,
+    "loss": 2.8981,
     "learning_rate": 0.0,
     "epoch": 1.0,
     "step": 1250,
     "train": {
-        "runtime": 2987.1788,
-        "samples_per_second": 33.476,
-        "steps_per_second": 4.185,
-        "loss": 2.283696710662842
+        "runtime": 1466.2147,
+        "samples_per_second": 68.203,
+        "steps_per_second": 8.525,
+        "loss": 2.6814218301391604
     },
-    "total_flos": 1939184025600000.0
+    "total_flos": 484796006400000.0
 }
