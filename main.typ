@@ -230,6 +230,6 @@ english -> flat_shuffle:
 nested -> english:
 2.82 - 2.65 - 2.37 vs 1.19
 flat -> english:
-? - ? - ? vs 1.19
+2.74 - 2.56 - 2.35 vs 1.19
 random -> english:
 ? - ? - ? vs 1.19

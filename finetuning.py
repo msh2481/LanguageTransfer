@@ -35,7 +35,7 @@ os.environ[
 ] = "isat_1mr9HNvqAB6xw8OJ3dXe5O9vMaKol59LCoA5gGP3eLY8NoSF8"
 
 # %%
-model_name = "Mlxa/brackets-nested"
+model_name = "Mlxa/brackets-flat"
 dataset = load_dataset("roneneldan/TinyStories", streaming=True)
 # tokenizer = dependencies_tokenizer(vocab_size=500)
 tokenizer = AutoTokenizer.from_pretrained("roneneldan/TinyStories-8M")
