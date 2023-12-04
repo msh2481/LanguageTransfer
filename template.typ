@@ -68,26 +68,31 @@
       )
   )
 
-  // Configure headings.
-  set heading(numbering: "1")
-  show heading: it => {
-    v(10pt)
-    // Create the heading numbering.
-    let number = if it.numbering != none {
-      set text(size: large-size)
-      counter(heading).display(it.numbering)
-      h(10pt, weak: true)
-    }
-
-    set text(size: large-size, weight: 400)
-    if it.level == 1 {
-      smallcaps(it.body)
-    } else {
-      it.body
-    }
-
-    v(10pt)
-  }
+   // Configure headings.
+  set heading(numbering: "1.1.1.")
+  show heading: it => locate(loc => {
+    v(20pt, weak: true)
+    if it.level == 1 [
+      #set text(title-size, weight: 600)
+      #if (it.body.text != "Contents" and it.body.text != "References") [
+        #counter(heading).display(it.numbering)
+      ]
+      #if it.numbering != none {
+        h(7pt, weak: true)
+      }
+      #it.body
+      #v(20pt, weak: true)
+    ] 
+    else if it.level == 2 [
+      #counter(heading).display(it.numbering)
+      #it.body
+      #v(10pt, weak: true)
+    ] else [
+      #counter(heading).display(it.numbering)
+      #it.body
+      #v(10pt, weak: true)
+    ]
+  })
 
   // Configure lists and links.
   set list(indent: 24pt, body-indent: 5pt)
@@ -98,7 +103,7 @@
   show math.equation: set block(below: 8pt, above: 9pt)
   show math.equation: set text(weight: 400)
   // Configure citation and bibliography styles.
-  set bibliography(style:"apa", title: "References")
+  set bibliography(style:"ieee", title: "References")
 
   show figure: it => {
     show: pad.with(x: 23pt)
@@ -150,6 +155,7 @@
       text(size: normal-size, weight: 500, a.uni)
     }
   })
+  pagebreak()
 
   // Configure paragraph properties.
   // set par(first-line-indent: 1.2em, justify: true, leading: 0.58em)
@@ -158,12 +164,14 @@
   // Display the abstract
   if abstract != none {
     v(20pt, weak: true)
-    set text(large-size)
+    set text(title-size, weight: 600)
     show: pad.with(x: 35pt)
-    align(center, smallcaps([Abstract ]))
-    set text(normal-size)
+    [Abstract]
+    linebreak()
+    set text(normal-size, weight: 400)
     abstract
   }
+  pagebreak()
 
   // Display the article's contents.
   v(29pt, weak: true)
@@ -171,7 +179,7 @@
 
   // Display the bibliography, if any is given.
   if bibliography-file != none {
-    show bibliography: set text(8.5pt)
+    show bibliography: set text(normal-size)
     show bibliography: pad.with(x: 0.5pt)
     bibliography(bibliography-file)
   }

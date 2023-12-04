@@ -1,6 +1,6 @@
 #import "template.typ": *
 #show: ams-article.with(
-  title: "Something about generalization",
+  title: "Transfer of structural knowledge from synthethic languages",
   authors: (
     (
       name: "Mikhail Budnikov",
@@ -14,9 +14,89 @@
   bibliography-file: "refs.bib",
 )
 
+#show outline: set heading(outlined: true)
+#outline(indent: auto)
+#pagebreak()
+
+= Previous work
+
+Machine learning systems are rapidly becoming more powerful. Data-driven methods can model increasingly more complex domains, so for example training a super-human image classifier @he2015delving or a language model which is super-human in terms of perplexity @shlegeris2022language is now mostly an engineering problem. However, even the amount of unlabeled data is limited and might be exhausted in this decade @villalobos2022will. This problem is even more pressing for the tasks which require human supervision or that are rarely found in web data. Which means that to get more powerful and universal machine learning systems simply collecting more diverse data is not enough and one need methods that can generalize efficiently under distribution shifts. Moreover, to be able to scale AI to superhuman levels safely without unexpected or undesired capabilities @hendrycks2023overview it is important to understand precisely in what ways these systems generalize.
+
+In this work we take a bird's eye view on the question of why generalization occurs and how we can control it. Our main focus is on the natural language processing and especially on large language models, because they are currently the most universal machine learning systems, but many of the discussed ideas are relevant for machine learning in general.
+
+To give a clear exposition of the topic we group all related ideas by the related stage of machine learning pipeline. In the end of each section we provide a summary of insights from the discussed works. The high-level list of considered questions is given below. 
+
+== Data
+Machine learning algorithms are designed to learn from data, but it is not always clear what exactly they learn from it. We consider such approaches as selecting high-quality data, using demonstrations of instruction following or more elaborate problem-solving behavior, generating data from another model or algorithm, using data from different task or modality and even using completely random data. Internal representations of pre-trained language models are also discussed. These observations highlight different ways in which the information used for training can affect the final model.
+
+== Irrelevant data
+One way to understand pre-training on language models is that we transfer some linguistic knowledge from a task wich lots of data available to a downstream task @han2021pre. As it turns out, there are many non-obvious effects of pre-training as well.
+
+@papadimitriou2020learning show that pre-training LSTM @hochreiter1997long on structured but not linguistic data, such as MIDI music, Java code, or even nested parentheses, reduces its perplexity when testing on Spanish. It also works in the opposite direction, @lu2021pretrained get performance on different modalities comparable to training from scratch by fine-tuning only the input and output embeddings of the pre-trained GPT-2 @radford2019language. 
+
+@sinha2021masked find that removing all information about word order from the pre-training phase does not affect the final performance very much, given a fine-tuning phase with the correct word order. 
+
+@krishna2021does sample the training data from a completely artificial language, which consists of random n-grams, and observe that pre-training objectives that require processing this information somehow, such as copying sentences in the right order, still improve performance of the model on summarization tasks compared to randomly initialized version.
+
+@maennel2020neural run training with entirely random labels and find that in some cases it still helps for further fine-tuning. Tracing the roots of this effect they find that the first layer of the network adapts to the data. More precisely, consider the weights from the inputs to a randomly selected neuron in the first hidden layer as a random variable, then during pre-training the eigenvectors of its covariance matrix align with the eigenvectors of covariance matrix of the data. @chowers2023cnns further show that the first layer converges to the whitening transformation for the training dataset.
+
+There is evidence that pre-training leads optimization to a flat basin of the loss landscape. @mehta2021empirical confirm it and suggest as the reason why pre-trained models are more less susceptible to catastrophic forgetting during fine-tuning.  @neyshabur2020being also observe it and also show that models fine-tuned from the same checkpoint stay in the same basin.
+
+== Internal representations
+
+However, language models learn higher-level information as well. Recently, @gurnee2023language showed that pre-trained language models form quite detailed world models, in terms of both time and space representations. Namely, it is possible to extract information about where and when an event happened by linear projection from layer 50 activations on the corresponding token. @li2022emergent trained a language model to predict Othello moves and found that it represented the state of the board internally. @jin2023evidence demonstrate that language models trained on code have representations of program states and that quality of this representations is highly correlated with their ability to generate correct programs.
+
+Another surprising finding is that language models tend to learn linear representations even when they are not explicitly directed to do so. A well-known example is Word2vec @mikolov2013efficient, which showed that applying vector arithmetic to word embeddings produces meaningful results. A more recent example in this direction, 
+ @turner2023activation found that same trick works for GPT-2 activations. @nanda2023othello showed that Othello-GPT actually has linear world model, in @jin2023evidence the representations are linear as well.
+
+
+== High-quality data
+Current state-of-the-art language models are trained on vast amounts of text, which makes training them very expensive and soon can even become a bottleneck because the amount of data we have is finite. Regarding the topic of this study, an important question is what kind of data and how much of it is needed for the model to obtain certain capabilities, such as producing coherent English or zero-shot reasoning. In other words, how to construct the dataset to make the generalization easier.
+
+@eldan2023tinystories show that by training on stories with very limited vocabulary it is possible to get a model with less than 10 million parameters which is still able to generate consistent and grammatically correct stories. 
+
+@gunasekar2023textbooks extend this line of work towards programming domain and show that by carefully selecting data with the most educational value it is possible to significantly reduce the size of language models for code. @li2023textbooks check this for commonsense reasoning and also observe large gains. 
+
+== Learning inductive bias from data
+
+A useful inductive bias can be instilled into the model by pre-training on data that demonstrates it. @mccoy2020universal use pre-training on natural languages with certain properties by model-agnostic meta-learning @finn2017model to find which biases are needed to quickly acquire these languages. @wu2021lime design synthetic datasets requiring deduction, induction and abduction and pre-train on them to extract inductive bias for general mathematical reasoning. @lindemann2023injecting pre-train models to simulate finite state transducers given their description and achieve better generalization in NLP tasks with similar structure.
+
+@mukherjee2023orca introduce a form of knowledge distillation suitable for language models, where a smaller model is trained on the explanations produced by a bigger one. Such rich training data helps to get better performance from smaller models, which implies boost in generalization. It can also be seen as transferring a superior inductive bias from the teacher model to the student.
+#note[Add @mitra2023orca.]
+
+
+#note[Use proper format for citet-style citations]
+#note[Rewrite these parts]
+
+
+== Properties of a trained model related to generalization
+
+One setting for study of generalization is the i.i.d. case --- train and test samples are from the same distribution and independent, which allows to quantify generalization and provide lower bounds for it. Many properties are found to be be provide such lower bounds, though most of them are describing model complexity in some way:
+-  Compressibility: @arora2018stronger, @lotfi2022pac
+-  Weight norm: @bartlett1996valid, @wei2019data, @kawaguchi2017generalization
+-  Flatness: @hochreiter1997flat, @bahri2021sharpness, @orvieto2022anticorrelated
+-  Algorithmic stability: @chatterjee2022generalization, @bousquet2000algorithmic
+
+Whenever a model is used on data on the real-world data, there almost always will be a distribution shift, training data can be completely representative of the actual distribution of inputs only in the simplest cases. So a more useful, though harder to measure, setting is out-of-distribution generalization. As formalized by @wolpert1996lack in no free lunch theorems, without additional assumptions about the problems, all learning algorithms are equally bad, and even such widespread technique as cross-validation will lose to anti-cross-validation in half of the cases. 
+
+If one at least assumes that simple hypotheses should be preferred to complex ones, it is already enough to derive a general method for inductive inference, Solomonoff induction @solomonoff2009algorithmic. By averaging predictions of all possible models weighted by their Kolmogorov complexity it makes only a finite number of errors while predicting any computable sequence. @goldblum2023no points out that most real-world data sources indeed have such simplicity bias, or in other words, can be compressed, compared to the uniform distribution suggested by no free lunch theorems. An interesting observation is that modern deep learning models, including large language models, both trained and randomly initialized, also tend to show a preference for simple solutions @goldblum2023no, @valle2018deep.
+
+== Avoiding too simple solutions <too_good>
+
+One of the inductive biases is simplicity, also known as Occam's razor, meaning that for two features with equal predictive power the simpler one will be learned. Many works had shown that deep neural networks have it in some form, at least when trained with gradient descent @valle2018deep, @valle2018deep, @mingard2019neural. While in many cases it can be helpful to prevent overfitting, often there is also an obvious lower bound for the complexity of generalizable solution. In such cases it is desirable to exclude overly simple solutions, as they are likely to use spurious correlations from training data and fail on test data.
+
+A possible way to deal with it is by training a smaller capacity model and the main model as an ensemble, so that the smaller model captures mostly the superficial patterns and the bigger learns the features that generalize better @clark2020learning. Also, as the superficial features tend to be learned first, one can train a biased model by giving increasingly more weight to the examples that it gets right, and train the main, unbiased model on the harder one @nam2020learning.
+
+The notion of simplicity can be tailored for specific architectures or tasks. For language modeling an important property of a model is to capture long-distance dependencies. @malkin2021coherence increase the effective context length of a language model by subtracting output logits of short-context model from the main model outputs. @chuang2023dola focus on the differences between layers in a deep model. They note that outputs from the last layers tend to be more factually correct, and by selecting one of the earlier layers for contrasting, it is possible to improve the factuality even further. Namely, they select the layer which has the largest Jensen-Shannon divergence of next-word distributions with the final layer, and then subtract their logits.
+
+== Controlling a known bias
+Similar to methods for reducing simplicity bias, any known bias can be avoided by first training a separate model to capture features and patterns related to it, and then using its residuals to train the main model @he2019unlearn, or training the main model in an ensemble with the biased one @clark2019don.
+
+Vision Transformers @dosovitskiy2020image achieved better data-efficiency  by training them to predict not only the correct answer, but also the answer given by a convolutional network @touvron2021training. Using two different teacher architectures brings even more benefits @ren2022co.
+
+Of course, to be able to induce a certain inductive bias the model being pretrained has to be flexible enough to learn it, For example, LSTM gets less benefits from LIME pre-training @wu2021lime than Transformer @vaswani2017attention.
 
 = Plan
-
 
 The framework is from @papadimitriou2020learning, using Transformers and fine-tuning their LayerNorm is from @lu2021pretrained, and testing tasks are from @kharitonov2020they. Interpretability as in @elhage2021mathematical.
 
@@ -233,3 +313,5 @@ flat -> english:
 2.74 - 2.56 - 2.35 vs 1.19
 random -> english:
 ? - ? - ? vs 1.19
+
+#note[12.9M out of 19.7M (i.e. 65%) parameters are embeddings.]

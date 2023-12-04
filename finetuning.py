@@ -157,7 +157,7 @@ def train(batch_size: int, lr: float) -> None:
         args=training_args,
         train_dataset=tokenized_train,
     )
-    trainer.add_callback(DVCLiveCallback())
+    # trainer.add_callback(DVCLiveCallback())
     trainer.train()
 
 
@@ -171,7 +171,7 @@ def evaluate(n_samples: int) -> None:
 
 # %%
 # Fine-tuning only embeddings:
-train(batch_size=8, lr=1e-2)
+train(batch_size=64, lr=1e-2)
 
 # %%
 evaluate(n_samples=32)
