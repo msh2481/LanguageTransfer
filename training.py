@@ -1,34 +1,38 @@
 # %%
 import os
+from itertools import islice
+from typing import Mapping
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch as t
 import torch.nn.functional as F
 from beartype import beartype as typed
-from torch import Tensor as TT
-from jaxtyping import Float, Int
-from typing import Mapping
-from itertools import islice
 from datasets import load_dataset
-from transformers import AutoModelForCausalLM, Trainer, TrainingArguments
 from dvclive.huggingface import DVCLiveCallback
 from IPython.display import clear_output
+from jaxtyping import Float, Int
+from torch import Tensor as TT
+from transformers import AutoModelForCausalLM, Trainer, TrainingArguments
 
 from languages import dependencies_tokenizer
+from utils import (
+    fetch_or_ask,
+    generate_sample,
+    model_and_tokenizer,
+    show_string_with_weights,
+    get_logprobs,
+    logprobs_to_losses,
+)
 
 %load_ext autoreload
 %autoreload 2
 
 # %%
-def fetch_or_ask(var: str) -> str:
-    if var not in os.environ:
-        val = input(f"{var}: ")
-        clear_output()
-        os.environ[var] = val
-    return os.environ[var]
-
 gdrive_token = fetch_or_ask("GDRIVE_CREDENTIALS_DATA")
-os.environ["DVC_STUDIO_TOKEN"] = "isat_1mr9HNvqAB6xw8OJ3dXe5O9vMaKol59LCoA5gGP3eLY8NoSF8"
+os.environ[
+    "DVC_STUDIO_TOKEN"
+] = "isat_1mr9HNvqAB6xw8OJ3dXe5O9vMaKol59LCoA5gGP3eLY8NoSF8"
 
 # %%
 dataset = load_dataset("Mlxa/flat_shuffle")
@@ -46,6 +50,7 @@ tokens_sample = tokenizer(dataset["train"][0]["text"])["input_ids"]
 print(len(tokens_sample))
 print(tokens_sample[:10])
 
+
 # %%
 @typed
 def tokenize_function(example: Mapping[str, str | int]) -> Mapping[str, list[int]]:
@@ -53,82 +58,42 @@ def tokenize_function(example: Mapping[str, str | int]) -> Mapping[str, list[int
     result["labels"] = result["input_ids"]
     return result
 
+
 subset_size = 60000
 subset = dataset["train"].select(range(subset_size)).to_iterable_dataset()
 tokenized = subset.map(tokenize_function, batched=True).remove_columns(["text"])
 
 # %%
-@typed
-def show_string_with_weights(s: list[str], w: list[float] | Float[TT, "seq"]) -> None:
-    from IPython.display import HTML, display
-    from matplotlib.colors import rgb2hex
-    from matplotlib import colormaps
 
-    cmap = colormaps["coolwarm"]
-    def brighten(rgb):
-        return tuple([(x + 1) / 2 for x in rgb])
-    colors = [brighten(cmap(alpha)) for alpha in w]
-    html_str_colormap = " ".join(
-        [
-            f'<span style="background-color: {rgb2hex(color)}; padding: 1px; margin: 0px; border-radius: 5px;">{word}</span>'
-            for word, color in zip(s, colors)
-        ]
-    )
-    display(HTML(html_str_colormap))
 
 @typed
-def sample_and_logprobs(sample: Mapping[str, list[int]]) -> None:
-    model.cuda()
-    gen_length = 10
-    with t.no_grad():
-        inputs = {k: t.tensor([v], device="cuda") for k, v in sample.items()}
-        ids = inputs["input_ids"][0]
-        pos = len(ids) - gen_length
-        pad = len(ids)
-        truncated = {k: v[:, :pos] for k, v in inputs.items()}
-        sampled_tokens = (
-            model.generate(
-                **truncated,
-                max_new_tokens=gen_length,
-                pad_token_id=tokenizer.pad_token_id,
-                bad_words_ids=[[tokenizer.pad_token_id]],
-                do_sample=True,
-            )[0]
-            .detach()
-            .cpu()
-        )
-        without_prompt = tokenizer.decode(sampled_tokens[pos:])
+def explore(sample: Mapping[str, list[int]], n_tokens: int = 10) -> None:
+    ids: Int[TT, "seq"] = t.tensor(sample["input_ids"])
+    sampled: str = generate_sample(model, tokenizer, ids[:-n_tokens], n_tokens)
+    logprobs: Float[TT, "seq vocab"] = get_logprobs(model, tokenizer, ids)[-n_tokens:]
 
-        output = model(**inputs)
-        logprobs: Float[TT, "seq vocab"] = F.log_softmax(
-            output.logits.cpu().detach(), dim=-1
-        ).squeeze(0)
+    # 0 for perfect prediction, 1 for infinite loss
+    weights: Float[TT, "seq"] = logprobs_to_losses(logprobs, ids).tanh()
+    tokens = [tokenizer.decode(i) for i in ids[-n_tokens:]]
 
-        labels: Int[TT, "seq 1"] = inputs["input_ids"][0, 1:].cpu().unsqueeze(-1)
-        lp_per_token: Float[TT, "seq"] = logprobs[:-1].gather(-1, labels).squeeze(-1)[pos - 1:]
-        weights = F.tanh(-lp_per_token)  # 0 for perfect prediction, 1 for infinite loss
-        tokens = [tokenizer.decode(i) for i in ids[pos:]]
-
-        show_string_with_weights(tokens, weights)
-        print(without_prompt)
+    show_string_with_weights(tokens, weights)
+    print(sampled)
 
 
 # %%
 for sample in islice(tokenized, 32):
-    sample_and_logprobs(sample)
+    explore(sample)
 
 # %%
 batch_size = 8
 
 training_args = TrainingArguments(
     output_dir="trainer",
-    fp16=True,
     per_device_train_batch_size=batch_size,
-    torch_compile=False,
     learning_rate=1e-3,
     logging_steps=50,
     num_train_epochs=1,
-    max_steps=subset_size//batch_size,
+    max_steps=subset_size // batch_size,
     save_total_limit=1,
 )
 trainer = Trainer(
@@ -141,7 +106,7 @@ trainer.train()
 
 # %%
 for sample in islice(tokenized, 32):
-    sample_and_logprobs(sample)
+    explore(sample)
 
 # %%
 from huggingface_hub import notebook_login
@@ -157,5 +122,6 @@ tokenizer.push_to_hub(name)
 
 # %%
 import gc
+
 gc.collect()
 t.cuda.empty_cache()
