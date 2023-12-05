@@ -295,23 +295,16 @@ Pre-training:
 - Finished early, when the training stagnated and loss came close to theoretical optimum.
 
 Fine-tunings:
-nested -> flat:
-4.41 - 4.14 - 4.08 vs 3.78
-flat -> nested:
-3.47 - 3.34 - 3.34  vs 3.32
-flat -> flat_shuffle:
-2.46 - 2.36 - 2.15 vs 2.00
-flat_shuffle -> flat:
-3.82 - 3.80 - 3.76 vs 3.78
-flat_shuffle -> english:
-2.42 - 2.30 - 2.00 vs 1.19
-english -> flat_shuffle:
-2.77 - 2.62 - 2.11 vs 2.00
-nested -> english:
-2.82 - 2.65 - 2.37 vs 1.19
-flat -> english:
-2.74 - 2.56 - 2.35 vs 1.19
-english -> flat:
-4.28 - 4.16 - 3.76 vs 3.78
 
+#let finetuning = csv("finetuning.csv")
+#table(
+    columns: (60pt, 60pt) + (auto,) * 8,
+    fill: (col, _) => if (col < 2 or col == 5 or col == 9) { luma(240) } else { white },
+    [*L1*], [*L2*], [*L2 E*], [*L2 EL*], [*L2 ELT*], [*L2 full*], [*L1 E*], [*L1 EL*], [*L1 ELT*], [*L1 full*],
+[nested],[flat],[4.41],[4.14],[4.08],[3.78],[*3.47*],[*3.34*],[*3.34*],[3.32],
+[flat],[flat_shuffle],[2.46],[2.36],[*2.15*],[2.00],[*3.82*],[*3.80*],[*3.76*],[3.78],
+[flat_shuffle],[english],[2.42],[2.30],[2.00],[1.19],[2.77],[2.62],[*2.11*],[2.00],
+[nested],[english],[2.82],[2.65],[2.37],[1.19],[*1.00*],[*1.00*],[*1.00*],[1.00],
+[flat],[english],[2.74],[2.56],[2.35],[1.19],[4.28],[4.16],[*3.76*],[3.78],
+)
 #note[12.9M out of 19.7M (i.e. 65%) parameters are embeddings.]
