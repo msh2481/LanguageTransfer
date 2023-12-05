@@ -1,11 +1,7 @@
 import os
 import random
-import shutil
-import sys
-import time
-from collections import defaultdict, deque
-from itertools import chain, cycle, islice, product
-from typing import Annotated, Any, TypeVar
+from itertools import islice
+from typing import Annotated, Any, Mapping, TypeVar
 
 import einops as ein
 import lightning.pytorch as pl  # type: ignore
@@ -21,16 +17,17 @@ from beartype import beartype as typed
 from beartype.door import die_if_unbearable as assert_type
 from beartype.typing import Callable, Iterable
 from beartype.vale import Is
+from datasets import IterableDataset
+from jaxtyping import Float, Int
+from numpy import ndarray as ND
+from torch import Tensor as TT
+from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     PreTrainedModel,
     PreTrainedTokenizerBase,
 )
-from jaxtyping import Float, Int
-from numpy import ndarray as ND
-from torch import Tensor as TT
-from tqdm import tqdm
 
 
 def seed_everything(seed):
@@ -84,13 +81,16 @@ def show_string_with_weights(s: list[str], w: list[float] | Float[TT, "seq"]) ->
         None
     """
     from IPython.display import HTML, display
-    from matplotlib.colors import rgb2hex
     from matplotlib import colormaps
+    from matplotlib.colors import rgb2hex
 
     cmap = colormaps["coolwarm"]
 
     def brighten(rgb):
         return tuple([(x + 1) / 2 for x in rgb])
+
+    if not isinstance(w, list):
+        w = w.tolist()
 
     colors = [brighten(cmap(alpha)) for alpha in w]
     html_str_colormap = " ".join(
@@ -126,7 +126,7 @@ def prompt_to_input_ids(
     elif isinstance(prompt, list):
         return t.tensor(prompt).unsqueeze(0)
     else:
-        return prompt
+        return prompt.unsqueeze(0)
 
 
 @typed
@@ -160,7 +160,9 @@ def get_logprobs(
 ) -> Float[TT, "seq vocab"]:
     with t.no_grad():
         input_ids = prompt_to_input_ids(tokenizer, prompt).to(module_device(model))
-        output = model(input_ids, attention_mask=t.ones_like(input_ids), labels=input_ids)
+        output = model(
+            input_ids, attention_mask=t.ones_like(input_ids), labels=input_ids
+        )
         raw_lp = F.log_softmax(output.logits.cpu().detach(), dim=-1)
         return raw_lp.squeeze(0).roll(1, dims=0)
 
@@ -170,3 +172,38 @@ def logprobs_to_losses(
     lp: Float[TT, "seq vocab"], labels: Int[TT, "seq"]
 ) -> Float[TT, "seq"]:
     return -lp.gather(-1, labels.unsqueeze(-1)).squeeze(-1)
+
+
+@typed
+def explore(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    sample: Mapping[str, list[int]],
+    n_tokens: int = 10,
+) -> Float[TT, "seq"]:
+    ids: Int[TT, "seq"] = t.tensor(sample["input_ids"])
+    sampled: str = generate_sample(model, tokenizer, ids[:-n_tokens], n_tokens)
+    logprobs: Float[TT, "seq vocab"] = get_logprobs(model, tokenizer, ids)
+    losses: Float[TT, "seq"] = logprobs_to_losses(logprobs, ids)
+
+    # 0 for perfect prediction, 1 for infinite loss
+    weights: Float[TT, "seq"] = losses[-n_tokens:].tanh()
+    tokens: list[str] = [tokenizer.decode(i) for i in ids[-n_tokens:]]
+
+    show_string_with_weights(tokens, weights)
+    print(sampled)
+    return losses
+
+
+@typed
+def explore_batch(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    dataset: IterableDataset,
+    n_samples: int = 32,
+) -> None:
+    losses = [
+        explore(model, tokenizer, sample).mean().item()
+        for sample in islice(dataset, n_samples)
+    ]
+    print(f"Mean loss: {sum(losses) / len(losses):.3f}")

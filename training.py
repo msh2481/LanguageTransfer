@@ -18,11 +18,7 @@ from transformers import AutoModelForCausalLM, Trainer, TrainingArguments
 from languages import dependencies_tokenizer
 from utils import (
     fetch_or_ask,
-    generate_sample,
-    model_and_tokenizer,
-    show_string_with_weights,
-    get_logprobs,
-    logprobs_to_losses,
+    explore_batch,
 )
 
 %load_ext autoreload
@@ -64,25 +60,7 @@ subset = dataset["train"].select(range(subset_size)).to_iterable_dataset()
 tokenized = subset.map(tokenize_function, batched=True).remove_columns(["text"])
 
 # %%
-
-
-@typed
-def explore(sample: Mapping[str, list[int]], n_tokens: int = 10) -> None:
-    ids: Int[TT, "seq"] = t.tensor(sample["input_ids"])
-    sampled: str = generate_sample(model, tokenizer, ids[:-n_tokens], n_tokens)
-    logprobs: Float[TT, "seq vocab"] = get_logprobs(model, tokenizer, ids)[-n_tokens:]
-
-    # 0 for perfect prediction, 1 for infinite loss
-    weights: Float[TT, "seq"] = logprobs_to_losses(logprobs, ids).tanh()
-    tokens = [tokenizer.decode(i) for i in ids[-n_tokens:]]
-
-    show_string_with_weights(tokens, weights)
-    print(sampled)
-
-
-# %%
-for sample in islice(tokenized, 32):
-    explore(sample)
+explore_batch(model, tokenizer, tokenized)
 
 # %%
 batch_size = 8
@@ -105,8 +83,7 @@ trainer.add_callback(DVCLiveCallback())
 trainer.train()
 
 # %%
-for sample in islice(tokenized, 32):
-    explore(sample)
+explore_batch(model, tokenizer, tokenized)
 
 # %%
 from huggingface_hub import notebook_login
