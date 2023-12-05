@@ -138,6 +138,8 @@ explore(tokenized, l=0, r=20)
 
 
 # TODO: like attention maps, but actually replacing a certain token with noise several times and measuring impacts
+# TODO: list some properties (subject/object/verb, noun/adjective/verb, name, tense, starts from space, etc), then check how much variance each of them explains
+# TODO: indirect object identification, SVO order, gender synchronization, tense, using adjectives order, copying, copying in reverse, repeating, world model
 # %%
 
 embeddings = AutoModelForCausalLM.from_pretrained("Mlxa/embeddings-flat_shuffle-english").get_input_embeddings().weight.detach().numpy()
