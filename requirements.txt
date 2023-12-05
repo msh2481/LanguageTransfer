@@ -15,3 +15,4 @@ pyarrow>=9.0.0
 dvc[gdrive]>= 3.28.0
 dvclive>=3.2.0
 bitsandbytes>=0.41.1
+nltk>=3.6.7

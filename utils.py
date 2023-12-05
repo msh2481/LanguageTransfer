@@ -108,25 +108,17 @@ def module_device(model: nn.Module) -> str:
 
 
 @typed
-def model_and_tokenizer(
-    model_name: str,
-) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
-    model = AutoModelForCausalLM.from_pretrained(model_name)
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    return model, tokenizer
-
-
-@typed
-def prompt_to_input_ids(
+def tokenize(
     tokenizer: PreTrainedTokenizerBase,
     prompt: str | list[int] | Int[TT, "seq"],
-) -> Int[TT, "batch seq"]:
+    device: str = "cpu",
+) -> dict[str, Int[TT, "batch seq"]]:
     if isinstance(prompt, str):
-        return tokenizer(prompt, return_tensors="pt")["input_ids"]
-    elif isinstance(prompt, list):
-        return t.tensor(prompt).unsqueeze(0)
+        result = tokenizer(prompt, return_tensors="pt")
     else:
-        return prompt.unsqueeze(0)
+        result = tokenizer(tokenizer.decode(prompt), return_tensors="pt")
+    result["labels"] = result["input_ids"]
+    return {name: value.to(device) for name, value in result.items()}
 
 
 @typed
@@ -137,13 +129,11 @@ def generate_sample(
     max_new_tokens: int,
     keep_prompt: bool = False,
 ) -> str:
-    input_ids = prompt_to_input_ids(tokenizer, prompt).to(module_device(model))
-    pad_token_id = tokenizer.pad_token_id or tokenizer.eos_token_id
-    suffix = 0 if keep_prompt else len(input_ids[0])
-    output = model.generate(
-        input_ids=input_ids,
-        attention_mask=t.ones_like(input_ids),
-        labels=input_ids,
+    inputs = tokenize(tokenizer, prompt, device=module_device(model))
+    pad_token_id: int = tokenizer.pad_token_id or tokenizer.eos_token_id
+    suffix: int = 0 if keep_prompt else len(inputs["input_ids"][0])
+    output: Int[TT, "suffix"] = model.generate(
+        **inputs,
         max_new_tokens=max_new_tokens,
         do_sample=True,
         pad_token_id=pad_token_id,
@@ -159,12 +149,10 @@ def get_logprobs(
     prompt: str | list[int] | Int[TT, "seq"],
 ) -> Float[TT, "seq vocab"]:
     with t.no_grad():
-        input_ids = prompt_to_input_ids(tokenizer, prompt).to(module_device(model))
-        output = model(
-            input_ids, attention_mask=t.ones_like(input_ids), labels=input_ids
-        )
-        raw_lp = F.log_softmax(output.logits.cpu().detach(), dim=-1)
-        return raw_lp.squeeze(0).roll(1, dims=0)
+        inputs = tokenize(tokenizer, prompt, device=module_device(model))
+        logits: Float[TT, "seq vocab"] = model(**inputs).logits.squeeze(0)
+        raw_lp: Float[TT, "seq"] = F.log_softmax(logits.cpu().detach(), dim=-1)
+        return raw_lp.roll(1, dims=0)
 
 
 @typed
@@ -175,23 +163,34 @@ def logprobs_to_losses(
 
 
 @typed
+def get_loss(
+    model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, prompt: str
+) -> float:
+    input_ids = tokenize(tokenizer, prompt, device=module_device(model))
+    return model(**input_ids).loss.item()
+
+
+@typed
 def explore(
     model: PreTrainedModel,
     tokenizer: PreTrainedTokenizerBase,
-    sample: Mapping[str, list[int]],
+    prompt: str | list[int] | Int[TT, "seq"],
     n_tokens: int = 10,
+    show_sample: bool = False,
 ) -> Float[TT, "seq"]:
-    ids: Int[TT, "seq"] = t.tensor(sample["input_ids"])
-    sampled: str = generate_sample(model, tokenizer, ids[:-n_tokens], n_tokens)
-    logprobs: Float[TT, "seq vocab"] = get_logprobs(model, tokenizer, ids)
+    ids: Int[TT, "seq"] = tokenize(tokenizer, prompt)["input_ids"][0]
+    logprobs: Float[TT, "seq vocab"] = get_logprobs(model, tokenizer, prompt)
     losses: Float[TT, "seq"] = logprobs_to_losses(logprobs, ids)
 
     # 0 for perfect prediction, 1 for infinite loss
     weights: Float[TT, "seq"] = losses[-n_tokens:].tanh()
     tokens: list[str] = [tokenizer.decode(i) for i in ids[-n_tokens:]]
-
     show_string_with_weights(tokens, weights)
-    print(sampled)
+
+    if show_sample:
+        sampled: str = generate_sample(model, tokenizer, ids[:-n_tokens], n_tokens)
+        print(sampled)
+
     return losses
 
 
@@ -203,7 +202,7 @@ def explore_batch(
     n_samples: int = 32,
 ) -> None:
     losses = [
-        explore(model, tokenizer, sample).mean().item()
+        explore(model, tokenizer, sample["input_ids"])[1:].mean().item()
         for sample in islice(dataset, n_samples)
     ]
     print(f"Mean loss: {sum(losses) / len(losses):.3f}")

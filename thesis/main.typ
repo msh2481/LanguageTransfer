@@ -311,7 +311,7 @@ nested -> english:
 2.82 - 2.65 - 2.37 vs 1.19
 flat -> english:
 2.74 - 2.56 - 2.35 vs 1.19
-random -> english:
-? - ? - ? vs 1.19
+english -> flat:
+4.28 - 4.16 - 3.76 vs 3.78
 
 #note[12.9M out of 19.7M (i.e. 65%) parameters are embeddings.]
