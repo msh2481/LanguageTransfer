@@ -9,7 +9,11 @@
     ),
   ),
   abstract: [
-    What knowledge is transfered between languages by Transformer models, for different types of transfer from zero-shot to complete fine-tuning?
+    Large Language Models are becoming increasingly capable and useful, but one of the bottlenecks is the amount of data required to train a model for a certain task, because the more data is used the more compute is need, and moreover, if the current scaling trends continue, soon there will not be enough high-quality data for even bigger models @villalobos2022will.      At the same time, recent research shows @eldan2023tinystories @gunasekar2023textbooks that data efficiency can be vastly improved by using datasets tailored for better learning. Still, the high-level mechanisms of learning in LLMs remain poorly understood, as exemplified by suprising findings that pre-training a model on a simple algorithmic task can lead to improvements in language modelling @papadimitriou2020learning. Thus, better understanding of the mechanisms of transfer learning is an important open question.
+
+    In this work I focus on several algorithmic datasets and transfer learning from them to English, and try several approaches to analyze them deeper.
+
+    #note[Write about the results.]
   ],
   bibliography-file: "refs.bib",
 )
@@ -18,7 +22,26 @@
 #outline(indent: auto)
 #pagebreak()
 
-= Previous work
+= Introduction
+- a lot of money is spent on pretraining large language models, we are running out of data
+    - draw a history of ML, from deep learning to LLMs, cite @villalobos2022will
+- recently there were several results indicating that high-quality datasets can help to reduce the model size preserving the performance
+    - mention TinyStories and Textbooks Are All You Need
+    - mention instruction tuning
+- also lots of ongoing research about what exactly transfers during transfer learning, which is important to construct better datasets
+    - training on shuffled words still leads to improvements
+    - training on bracket sequences also works
+- the task is difficult and in many works only the values of metrics, such as the perplexity, are reported, without a deeper qualitative analysis
+    - show the main plot from @papadimitriou2020learning
+- in this work I focus on several algorithmic datasets and transfer learning from them to English, and try to get deeper insights about the process
+    - hierarchy of languages, introducing new language
+    - when we fine-tune only embeddings, do they have a similar structure for the new language?
+    - when limited in size, what models learn about English after pre-training on a certain synthetic task: word-level knowledge, word relations, sentence structure?
+
+
+
+
+= Background and motivation
 
 Machine learning systems are rapidly becoming more powerful. Data-driven methods can model increasingly more complex domains, so for example training a super-human image classifier @he2015delving or a language model which is super-human in terms of perplexity @shlegeris2022language is now mostly an engineering problem. However, even the amount of unlabeled data is limited and might be exhausted in this decade @villalobos2022will. This problem is even more pressing for the tasks which require human supervision or that are rarely found in web data. Which means that to get more powerful and universal machine learning systems simply collecting more diverse data is not enough and one need methods that can generalize efficiently under distribution shifts. Moreover, to be able to scale AI to superhuman levels safely without unexpected or undesired capabilities @hendrycks2023overview it is important to understand precisely in what ways these systems generalize.
 
@@ -96,7 +119,7 @@ Vision Transformers @dosovitskiy2020image achieved better data-efficiency  by tr
 
 Of course, to be able to induce a certain inductive bias the model being pretrained has to be flexible enough to learn it, For example, LSTM gets less benefits from LIME pre-training @wu2021lime than Transformer @vaswani2017attention.
 
-= Plan
+== Open questions
 
 The framework is from @papadimitriou2020learning, using Transformers and fine-tuning their LayerNorm is from @lu2021pretrained, and testing tasks are from @kharitonov2020they. Interpretability as in @elhage2021mathematical.
 
@@ -142,7 +165,7 @@ Take a single model, something like `GPT-2` or `TinyStories`. Pre-train it on di
 9. Replace parts of the model with the untrained version with matched mean and std, check performance drops. This will highlight all necessary components.
 10. Check attention patterns for the remaining heads, both on L1 and L2. Try to understand what they do and why is it important for the new task.
 
-= Datasets
+== Datasets
 For each artificial language I generate words from it and save each as an indivudial sample. I chose Parquet format, because it is efficient in reading, and also allows to create dataset one batch per time and thus not be limited by the amount of RAM.
 
 By iterative writing I mean the following approach:
@@ -162,7 +185,7 @@ def write_to_parquet(
 ```
 
 
-== `nested`
+=== `nested`
 This dataset consists of matched token pairs nested in each other. It is generated by the following algorithm:
 ```python
 def nested_dependencies_sequence(
@@ -211,7 +234,7 @@ An example word from it, with the matching pairs highlighted:
     text(raw(value + " "), fill: get_color(value), weight: 400, size: 6pt)
 }
 
-== `flat`
+=== `flat`
 This dataset is almost like the previous one, but instead of stack-based grammar the decision which token to close now it made uniformly randomly among all currently open tokens. All parameters are the same.
 
 ```python
@@ -247,7 +270,7 @@ An example world:
 }
 
 
-== `flat_shuffle`
+=== `flat_shuffle`
 
 It is a combination of the previous dataset with the idea of implicit connections between tokens, as implemented in `Shuffle` languages from @chiang2022transferability. The idea behind it is that perhaps by adding more structure into the dataset, especially different kinds of structure, we can get a model with more interesting internal representations.
 
@@ -289,22 +312,28 @@ Example word:
     text(raw(value + " "), fill: get_color(value), weight: 400, size: 6pt)
 }
 
-= Experiments
+== Transfer learning metrics
 
+To get a better 
 Pre-training:
 - Finished early, when the training stagnated and loss came close to theoretical optimum.
 
 Fine-tunings:
 
 #let finetuning = csv("finetuning.csv")
+#set text(size: 7pt)
 #table(
     columns: (60pt, 60pt) + (auto,) * 8,
     fill: (col, _) => if (col < 2 or col == 5 or col == 9) { luma(240) } else { white },
+    align: center,
+    stroke: 0.3pt,
     [*L1*], [*L2*], [*L2 E*], [*L2 EL*], [*L2 ELT*], [*L2 full*], [*L1 E*], [*L1 EL*], [*L1 ELT*], [*L1 full*],
 [nested],[flat],[4.41],[4.14],[4.08],[3.78],[*3.47*],[*3.34*],[*3.34*],[3.32],
 [flat],[flat_shuffle],[2.46],[2.36],[*2.15*],[2.00],[*3.82*],[*3.80*],[*3.76*],[3.78],
 [flat_shuffle],[english],[2.42],[2.30],[2.00],[1.19],[2.77],[2.62],[*2.11*],[2.00],
-[nested],[english],[2.82],[2.65],[2.37],[1.19],[*1.00*],[*1.00*],[*1.00*],[1.00],
+[nested],[english],[2.82],[2.65],[2.37],[1.19],[3.83],[*3.46*],[*3.32*],[3.32],
 [flat],[english],[2.74],[2.56],[2.35],[1.19],[4.28],[4.16],[*3.76*],[3.78],
 )
 #note[12.9M out of 19.7M (i.e. 65%) parameters are embeddings.]
+
+= Conclusion
