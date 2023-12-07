@@ -93,3 +93,17 @@ cl = clusters(data)
 plt.plot(cl, "x", ms=5)
 plt.ylim(0, 16e3)
 plt.show()
+
+# %%
+from utils import mixed_probe
+import pandas as pd
+
+n, d = 1000, 5
+emb = t.randn((n, d))
+data = pd.DataFrame({
+    "a": emb[:, 0] + 2 * emb[:, 1] + t.randn(n),
+    "b": 0.1 * emb[:, 2] + 0.2 * emb[:, 3] + t.randn(n),
+    "c": t.randn(n),
+    "d": emb[:, 0] > emb[:, 1],
+})
+print(mixed_probe(emb, data))

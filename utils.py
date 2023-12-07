@@ -18,7 +18,7 @@ from beartype.door import die_if_unbearable as assert_type
 from beartype.typing import Callable, Iterable
 from beartype.vale import Is
 from datasets import IterableDataset
-from jaxtyping import Float, Int
+from jaxtyping import Float, Int, Bool
 from numpy import ndarray as ND
 from torch import Tensor as TT
 from tqdm import tqdm
@@ -227,7 +227,58 @@ def clusters(data: Float[TT, "n d"], max_clusters: int = 30) -> Float[TT, "k"]:
         results.append(kmeans.inertia_)
     return t.tensor(results) / one_cluster
 
+
 @typed
 def singular_vectors(data: Float[TT, "n d"]) -> Float[TT, "n d"]:
     data = data - data.mean(0)
     return t.linalg.svd(data, full_matrices=False).Vh
+
+
+@typed
+def linear_regression_probe(
+    embeddings: Float[TT, "n d"], features: Float[TT, "n"]
+) -> float:
+    from sklearn.model_selection import train_test_split
+    from sklearn.linear_model import Ridge
+    from sklearn.metrics import r2_score
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        embeddings, features, test_size=0.2
+    )
+    model = Ridge().fit(X_train, y_train)
+    y_pred = t.tensor(model.predict(X_test))
+    return r2_score(y_test, y_pred)
+
+
+@typed
+def linear_classification_probe(
+    embeddings: Float[TT, "n d"], features: Bool[TT, "n"]
+) -> float:
+    from sklearn.model_selection import train_test_split
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import roc_auc_score
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        embeddings,
+        features,
+        test_size=0.2,
+        random_state=42,
+    )
+    model = LogisticRegression(max_iter=1000).fit(X_train, y_train)
+    y_pred = model.predict_proba(X_test)[:, 1]
+    return roc_auc_score(y_test, y_pred)
+
+
+@typed
+def mixed_probe(
+    embeddings: Float[TT, "n d"], features: pd.DataFrame
+) -> dict[str, float]:
+    result = {}
+    for column in features.columns:
+        dtype = str(features[column].dtype)
+        y = t.tensor(features[column])
+        if "float" in dtype:
+            result[column] = linear_regression_probe(embeddings, y)
+        else:
+            result[column] = linear_classification_probe(embeddings, y)
+    return result

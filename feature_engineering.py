@@ -27,8 +27,7 @@ d = [counter[i] for i in range(len(tokenizer))]
 t.save(t.tensor(d), "word_freq.pt")
 
 features = pd.DataFrame({"token": all_tokens, "frequency": d})
-features["normalized"] = features["token"].str.lower().str.strip()
-features["pos_tag"] = features["normalized"].apply(lambda x: nltk.pos_tag([x])[0][1])
+features["pos_tag"] = features["token"].apply(lambda x: nltk.pos_tag([x.strip()])[0][1])
 features["start_space"] = features["token"].str.startswith(" ")
-
+features.at[201, "token"] = "\\n"
 features.to_csv("word_features.csv", index_label="id", escapechar="\\")

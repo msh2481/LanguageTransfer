@@ -46,13 +46,11 @@ _ = explore(from_shuffle_tun, tokenizer, prompt, n_tokens=10**9, show_sample=Fal
 
 # %%
 import pandas as pd
-
-features = pd.read_csv("word_features.csv")
-# features["frequency"] = features["frequency"].apply(np.log)
-# features = pd.get_dummies(features, columns=["pos_tag"])
-
-# %%
-features.columns
+features = pd.read_csv("word_features.csv", escapechar="\\")
+features["frequency"] = features["frequency"].astype(float).apply(np.log1p)
+features = pd.get_dummies(features, columns=["pos_tag"])
+to_remove = [c for c in features.columns if (features[c] != False).sum() < 200]
+features = features.drop(to_remove, axis=1)
 
 # %%
 get_embeddings = lambda model: model.get_input_embeddings().weight.detach()
@@ -128,6 +126,25 @@ analyze("scratch")
 
 # %%
 analyze("nested")
+
+# %%
+def analyze_probe(name):
+    from utils import mixed_probe
+    results = mixed_probe(emb_dict[name], features.drop(columns=["id", "token"]))
+    for name, value in results.items():
+        print(name, "\t", value)
+
+# %%
+analyze_probe("scratch")
+
+# %%
+analyze_probe("nested")
+
+# %%
+analyze_probe("flat")
+
+# %%
+analyze_probe("shuffle")
 
 # %% [markdown]
 # TODO:
