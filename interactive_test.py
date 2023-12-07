@@ -15,8 +15,11 @@ from utils import (
     get_logprobs,
     get_loss,
     explore_batch,
-    tokenize
+    tokenize,
+    spectrum,
+    clusters
 )
+from matplotlib import pyplot as plt
 
 %load_ext autoreload
 %autoreload 2
@@ -54,3 +57,39 @@ loss = model(
     **input_ids
 ).loss.item()
 print(loss)
+
+# %%
+n = 1000
+d = 5
+c = 2
+m = 3
+
+centers = t.randn((c, d))
+data = centers[t.randint(c, (n,))] + 0.01 * t.randn((n, m)) @ t.randn((m, d))
+
+# %%
+from utils import spectrum
+s = spectrum(data)
+print(s.sum())
+plt.plot(s)
+plt.show()
+
+# %%
+from utils import singular_vectors
+vecs = singular_vectors(data)
+print(vecs.shape)
+for vec in vecs:
+    print(vec.tolist())
+    proj = data @ vec
+    plt.plot(proj.numpy(), t.randn_like(proj).numpy(), "x")
+    plt.show()
+    plt.clf()
+
+# %%
+print(((centers[1] - centers[0]) / vecs[0]).tolist())
+# %%
+from utils import clusters
+cl = clusters(data)
+plt.plot(cl, "x", ms=5)
+plt.ylim(0, 16e3)
+plt.show()

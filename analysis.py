@@ -26,60 +26,116 @@ tokenizer.pad_token = tokenizer.eos_token
 all_tokens = [tokenizer.decode([i]) for i in range(len(tokenizer))]
 
 # %%
-import nltk
-from nltk.corpus import words
-
-nltk.download('averaged_perceptron_tagger')
-nltk.download('wordnet')
-nltk.download('omw-1.4')
-nltk.download('words')
-
-word_set = set(words.words())
-def get_word_properties(word):
-    properties = {
-        "start_space": word[0] == " ",
-        "end_space": word[-1] == " ",
-    }
-    word = word.strip()
-    if word in word_set:
-        pos_tag = nltk.pos_tag([word])[0][1]
-        properties["pos_tag"] = pos_tag
-        if 'VB' in pos_tag:
-            properties["tense"] = "present" if pos_tag in ["VBP", "VBZ"] else "past" if pos_tag == "VBD" else "infinitive"
-        if 'NN' in pos_tag:
-            properties["plural"] = pos_tag == "NNS"
-            properties["proper"] = pos_tag == "NNP"
-
-    return properties
-
-word = "lied "
-properties = get_word_properties(word)
-print(properties)
-
-
 # %%
 get_model = lambda name: AutoModelForCausalLM.from_pretrained(name)
-# from_scratch = get_model("roneneldan/TinyStories-8M")
-# from_nested_emb = get_model("Mlxa/embeddings-nested-english")
-# from_nested_tun = get_model("Mlxa/tuned-nested-english")
-# from_flat_emb = get_model("Mlxa/embeddings-flat-english")
-# from_flat_tun = get_model("Mlxa/tuned-flat-english")
-# from_shuffle_emb = get_model("Mlxa/embeddings-flat_shuffle-english")
+from_scratch = get_model("roneneldan/TinyStories-8M")
+from_nested_emb = get_model("Mlxa/embeddings-nested-english")
+from_nested_tun = get_model("Mlxa/tuned-nested-english")
+from_flat_emb = get_model("Mlxa/embeddings-flat-english")
+from_flat_tun = get_model("Mlxa/tuned-flat-english")
+from_shuffle_emb = get_model("Mlxa/embeddings-flat_shuffle-english")
 from_shuffle_tun = get_model("Mlxa/tuned-flat_shuffle-english")
 
 # %%
-prompt = 'Spot saw a car and said, "That is a nice car!"'
+from utils import explore
+prompt = 'Mary saw a car and said, "That is a nice car!"'
 _ = explore(from_shuffle_tun, tokenizer, prompt, n_tokens=10**9, show_sample=False)
+
+# %%
+# ### Word-level information
+
+# %%
+import pandas as pd
+
+features = pd.read_csv("word_features.csv")
+# features["frequency"] = features["frequency"].apply(np.log)
+# features = pd.get_dummies(features, columns=["pos_tag"])
+
+# %%
+features.columns
+
+# %%
+get_embeddings = lambda model: model.get_input_embeddings().weight.detach()
+
+emb_dict = {
+    "scratch": get_embeddings(from_scratch),
+    "nested": get_embeddings(from_nested_tun),
+    "flat": get_embeddings(from_flat_emb),
+    "shuffle": get_embeddings(from_shuffle_emb),
+}
+
+# %%
+from utils import spectrum
+
+plt.figure(figsize=(10, 10), dpi=200)
+plt.title("Spectrum of covariation matrix")
+for name, emb in emb_dict.items():
+    sp = spectrum(emb)
+    print(name, sp.sum().item())
+    plt.plot(sp[:200], label=name)
+plt.yscale("log")
+plt.ylim(0.01, 1)
+plt.legend()
+plt.savefig(f"img/spectrum.svg")
+
+# %%
+from utils import clusters
+
+plt.figure(figsize=(10, 10), dpi=200)
+plt.title("Inertia of KMeans")
+for name, emb in emb_dict.items():
+    print(name)
+    plt.plot(clusters(emb, max_clusters=100), label=name)
+plt.yscale("log")
+plt.ylim(0.1, 1)
+plt.legend()
+plt.savefig(f"img/clusters.svg")
+
+# %%
+from utils import singular_vectors
+from sklearn.cluster import KMeans
+from sklearn.manifold import TSNE
+
+def analyze(name, n_vectors: int = 5, n_clusters: int = 10):
+    emb = emb_dict[name]
+    vecs = singular_vectors(emb)
+    print("Singular vectors:", name)
+    for i, v in enumerate(vecs[:n_vectors]):
+        proj = emb @ v
+        order = t.argsort(proj)
+
+        print(f"#{i}, low:", [all_tokens[id] for id in order[:100:10]])
+        print(f"#{i}, high:", [all_tokens[id] for id in order[-100::10]])
+        plt.title("Distribution along this vector")
+        plt.plot(proj.numpy(), t.randn_like(proj).numpy(), "x")
+        plt.show()
+        plt.clf()
+    kmeans = KMeans(n_clusters=n_clusters, n_init=10).fit(emb)
+    labels = kmeans.labels_
+    step = 100
+    tsne = TSNE(n_components=2).fit(emb[::step]).embedding_
+    for i in range(n_clusters):
+        plt.plot(tsne[labels[::step] == i, 0], tsne[labels[::step] == i, 1], "x", label=f"#{i}")
+    plt.legend()
+    plt.show()
+    plt.clf()
+    for i in range(n_clusters):
+        sample = [all_tokens[id] for id in t.randperm(len(all_tokens)) if labels[id] == i][:10]
+        print(f"#{i}:", sample)
+
+# %%
+analyze("scratch")
+
+# %%
+analyze("nested")
 
 # %% [markdown]
 # TODO:
-# - test get_losses against .loss
 # - finish property extraction
 # - like attention maps, but actually replacing a certain token with noise several times and measuring impacts
 # - list some properties (subject/object/verb, noun/adjective/verb, name, tense, starts from space, etc), then check how much variance each of them explains
 # - indirect object identification, SVO order, gender synchronization, tense, using adjectives order, copying, copying in reverse, repeating, world model
 # %%
-get_embeddings = lambda model: model.get_input_embeddings().weight.detach()
 embeddings = get_embeddings(from_shuffle_tun)
 print(embeddings.shape)
 

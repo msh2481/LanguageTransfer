@@ -336,4 +336,9 @@ Fine-tunings:
 )
 #note[12.9M out of 19.7M (i.e. 65%) parameters are embeddings.]
 
+== Word-level information
+
+#image("../img/spectrum.svg", height: 300pt)
+#image("../img/clusters.svg", height: 300pt)
+
 = Conclusion

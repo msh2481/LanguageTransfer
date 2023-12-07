@@ -183,7 +183,7 @@ def explore(
     losses: Float[TT, "seq"] = logprobs_to_losses(logprobs, ids)
 
     # 0 for perfect prediction, 1 for infinite loss
-    weights: Float[TT, "seq"] = losses[-n_tokens:].tanh()
+    weights: Float[TT, "seq"] = (losses[-n_tokens:] / 2).tanh()
     tokens: list[str] = [tokenizer.decode(i) for i in ids[-n_tokens:]]
     show_string_with_weights(tokens, weights)
 
@@ -206,3 +206,28 @@ def explore_batch(
         for sample in islice(dataset, n_samples)
     ]
     print(f"Mean loss: {sum(losses) / len(losses):.3f}")
+
+
+@typed
+def spectrum(data: Float[TT, "n d"]) -> Float[TT, "d"]:
+    data = data - data.mean(0)
+    vals = t.linalg.svdvals(data)
+    return vals / vals.max()
+
+
+@typed
+def clusters(data: Float[TT, "n d"], max_clusters: int = 30) -> Float[TT, "k"]:
+    from sklearn.cluster import KMeans
+
+    one_cluster = (data - data.mean(0)).square().sum()
+    results = [one_cluster, one_cluster]
+    for k in range(2, max_clusters):
+        kmeans = KMeans(n_clusters=k, n_init=1, max_iter=100, algorithm="elkan")
+        kmeans.fit(data)
+        results.append(kmeans.inertia_)
+    return t.tensor(results) / one_cluster
+
+@typed
+def singular_vectors(data: Float[TT, "n d"]) -> Float[TT, "n d"]:
+    data = data - data.mean(0)
+    return t.linalg.svd(data, full_matrices=False).Vh
