@@ -282,3 +282,30 @@ def mixed_probe(
         else:
             result[column] = linear_classification_probe(embeddings, y)
     return result
+
+
+@typed
+def evaluate_cloze(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    prompt: str,
+    cloze: str,
+) -> float:
+    assert prompt.count("#") == 1
+    assert not prompt.startswith("#")
+    prompt = prompt.replace("#", cloze)
+    return get_loss(model, tokenizer, prompt)
+
+
+@typed
+def cloze_test(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    tests: list[list[str]],
+) -> Float[TT, "n"]:
+    results = []
+    for prompt, correct, incorrect in tests:
+        loss_correct = evaluate_cloze(model, tokenizer, prompt, correct)
+        loss_incorrect = evaluate_cloze(model, tokenizer, prompt, incorrect)
+        results.append(loss_incorrect - loss_correct)
+    return t.tensor(results)

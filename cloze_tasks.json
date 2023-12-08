@@ -1,0 +1,626 @@
+{
+  "synonyms and antonyms": [
+    [
+      "The weather was very hot, so they searched for a # place to sit.",
+      "cool",
+      "warm"
+    ],
+    [
+      "He was known for being very brave, unlike his # brother.",
+      "cowardly",
+      "heroic"
+    ],
+    [
+      "The box was incredibly light, almost as if it were #.",
+      "empty",
+      "full"
+    ],
+    [
+      "Her answer was correct, but his was #.",
+      "wrong",
+      "right"
+    ],
+    [
+      "The cat was small, but the dog was #.",
+      "large",
+      "tiny"
+    ],
+    [
+      "She spoke in a loud voice, whereas he spoke in a # tone.",
+      "quiet",
+      "noisy"
+    ],
+    [
+      "The first question was easy, but the second one was #.",
+      "hard",
+      "simple"
+    ],
+    [
+      "He was feeling happy today, unlike yesterday when he was #.",
+      "sad",
+      "joyful"
+    ],
+    [
+      "The road was wide, in contrast to the # alley.",
+      "narrow",
+      "broad"
+    ],
+    [
+      "During the day, the beach is busy, but at night it is #.",
+      "peaceful",
+      "crowded"
+    ]
+  ],
+  "single plural": [
+    [
+      "She # a book yesterday.",
+      "read",
+      "reads"
+    ],
+    [
+      "They # to the store every Saturday.",
+      "go",
+      "goes"
+    ],
+    [
+      "He # tall enough to reach the shelf.",
+      "is",
+      "are"
+    ],
+    [
+      "The cat # on the mat.",
+      "sits",
+      "sit"
+    ],
+    [
+      "We # happy to see you.",
+      "are",
+      "is"
+    ],
+    [
+      "I # my homework after dinner.",
+      "do",
+      "does"
+    ],
+    [
+      "The flowers # beautiful in spring.",
+      "are",
+      "is"
+    ],
+    [
+      "She # her keys in her bag.",
+      "puts",
+      "put"
+    ],
+    [
+      "They # a new car last month.",
+      "bought",
+      "buy"
+    ],
+    [
+      "He # his room every Sunday.",
+      "cleans",
+      "clean"
+    ]
+  ],
+  "logical relations": [
+    [
+      "If it rains, we will stay indoors # go to the park",
+      "not",
+      "and"
+    ],
+    [
+      "She must hurry if she wants to catch the bus, # she might miss it",
+      "otherwise",
+      "because"
+    ],
+    [
+      "He is very tall, # he cannot fit through the door",
+      "so",
+      "but"
+    ],
+    [
+      "You can have tea # coffee",
+      "or",
+      "and"
+    ],
+    [
+      "The dog barked loudly, # everyone woke up",
+      "and",
+      "but"
+    ],
+    [
+      "She studied hard, # she passed the exam",
+      "so",
+      "and"
+    ],
+    [
+      "It is cold outside, # wear a coat",
+      "so",
+      "but"
+    ],
+    [
+      "They can play after finishing homework, # not before",
+      "but",
+      "so"
+    ],
+    [
+      "The cake is delicious, # it is too sweet",
+      "but",
+      "so"
+    ],
+    [
+      "He missed the train, # he will be late",
+      "so",
+      "and"
+    ]
+  ],
+  "subject verb agreement": [
+    [
+      "The cat on the fence # quietly",
+      "sits",
+      "burns"
+    ],
+    [
+      "Every morning, the birds # a beautiful song",
+      "sing",
+      "fly"
+    ],
+    [
+      "The clock on the wall # every hour",
+      "chimes",
+      "jumps"
+    ],
+    [
+      "In winter, the tree # its leaves",
+      "loses",
+      "grows"
+    ],
+    [
+      "The dog with the wagging tail # for food",
+      "begs",
+      "swims"
+    ],
+    [
+      "At night, the stars in the sky # brightly",
+      "shine",
+      "dance"
+    ],
+    [
+      "The book on the shelf # an interesting story",
+      "tells",
+      "listens"
+    ],
+    [
+      "The sun # in the east every morning",
+      "rises",
+      "sleeps"
+    ],
+    [
+      "The child in the park # with joy",
+      "laughs",
+      "walks"
+    ],
+    [
+      "In the kitchen, the kettle # when it's boiling",
+      "whistles",
+      "sits"
+    ]
+  ],
+  "prepositions": [
+    [
+      "The cat is sleeping # the chair",
+      "under",
+      "above"
+    ],
+    [
+      "Please write your name # the top of the page",
+      "at",
+      "in"
+    ],
+    [
+      "She walked # the bridge to get to the other side",
+      "across",
+      "along"
+    ],
+    [
+      "We will meet you # the corner of the street",
+      "at",
+      "on"
+    ],
+    [
+      "The book was # the table",
+      "on",
+      "under"
+    ],
+    [
+      "He ran # the road to catch the bus",
+      "across",
+      "through"
+    ],
+    [
+      "The picture was hanging # the wall",
+      "on",
+      "over"
+    ],
+    [
+      "The dog is hiding # the sofa",
+      "under",
+      "between"
+    ],
+    [
+      "She placed the vase # the shelf",
+      "on",
+      "in"
+    ],
+    [
+      "They live # a small village",
+      "in",
+      "on"
+    ]
+  ],
+  "conjunctions": [
+    [
+      "She went to the store # she needed milk.",
+      "because",
+      "although"
+    ],
+    [
+      "He likes cats # he is allergic to them.",
+      "but",
+      "and"
+    ],
+    [
+      "It was raining, # they decided to stay indoors.",
+      "so",
+      "yet"
+    ],
+    [
+      "She can play the guitar # the piano.",
+      "and",
+      "but"
+    ],
+    [
+      "He missed the bus, # he had to walk home.",
+      "so",
+      "although"
+    ],
+    [
+      "I would like to go to the beach # I have to work today.",
+      "but",
+      "so"
+    ],
+    [
+      "They were late # the traffic was heavy.",
+      "because",
+      "but"
+    ],
+    [
+      "She studied hard, # she passed the exam.",
+      "and",
+      "but"
+    ],
+    [
+      "He was tired # he couldn't sleep.",
+      "but",
+      "because"
+    ],
+    [
+      "It's a small room # it's very comfortable.",
+      "but",
+      "so"
+    ]
+  ],
+  "temporal understanding": [
+    [
+      "She ate breakfast # she went to school",
+      "before",
+      "after"
+    ],
+    [
+      "It's usually dark outside # the sun rises",
+      "before",
+      "while"
+    ],
+    [
+      "We can play outside # it stops raining",
+      "after",
+      "during"
+    ],
+    [
+      "He brushes his teeth # he goes to bed",
+      "before",
+      "while"
+    ],
+    [
+      "The store opens # 9 am every day",
+      "at",
+      "since"
+    ],
+    [
+      "The meeting was postponed # next Monday",
+      "to",
+      "from"
+    ],
+    [
+      "Please finish your homework # watching TV",
+      "before",
+      "after"
+    ],
+    [
+      "The train will leave # five minutes",
+      "in",
+      "at"
+    ],
+    [
+      "He has been studying English # 2015",
+      "since",
+      "until"
+    ],
+    [
+      "They usually have lunch # noon",
+      "around",
+      "until"
+    ]
+  ],
+  "spatial understanding": [
+    [
+      "The cat is under the #",
+      "table",
+      "sky"
+    ],
+    [
+      "She put the book # the shelf",
+      "on",
+      "under"
+    ],
+    [
+      "He walked # the door to leave the room",
+      "towards",
+      "away"
+    ],
+    [
+      "The picture was hanging # the wall",
+      "on",
+      "in"
+    ],
+    [
+      "They sat # the campfire and told stories",
+      "around",
+      "under"
+    ],
+    [
+      "The ball rolled # the hill",
+      "down",
+      "up"
+    ],
+    [
+      "She looked # to see the stars in the sky",
+      "up",
+      "down"
+    ],
+    [
+      "He placed the cup # the coaster to avoid a stain",
+      "on",
+      "beside"
+    ],
+    [
+      "The bird flew # the tree to the roof",
+      "from",
+      "into"
+    ],
+    [
+      "The flowers are planted # the house",
+      "beside",
+      "above"
+    ]
+  ],
+  "quantitative reasoning": [
+    [
+      "There are 5 apples. If I eat 2, there will be # left",
+      "3",
+      "4"
+    ],
+    [
+      "If one car has 4 wheels, then 3 cars have # wheels in total",
+      "12",
+      "10"
+    ],
+    [
+      "I have 10 fingers. If I lose 2, I have # fingers left",
+      "8",
+      "9"
+    ],
+    [
+      "There are 24 hours in a day, and thus # hours in half a day",
+      "12",
+      "10"
+    ],
+    [
+      "If a pair is 2, then 3 pairs are # items",
+      "6",
+      "5"
+    ],
+    [
+      "Jane has 2 apples. If she buys 3 more, she will have # apples",
+      "5",
+      "4"
+    ],
+    [
+      "If you have two cookies and your friend gives you two more, how many do you have now? #",
+      "four",
+      "three"
+    ],
+    [
+      "A train travels 60 miles in 2 hours. How many miles does it travel in one hour? #",
+      "30",
+      "60"
+    ],
+    [
+      "If a pack of gum costs 50 cents and you buy two, how much do you spend? #",
+      "one dollar",
+      "50 cents"
+    ],
+    [
+      "You read 2 pages of a book each day. How many pages do you read in a week? #",
+      "14",
+      "7"
+    ]
+  ],
+  "emotions": [
+    [
+      "She felt very happy, and she couldn't stop #",
+      "smiling",
+      "crying"
+    ],
+    [
+      "When he lost his keys, he was really #",
+      "frustrated",
+      "excited"
+    ],
+    [
+      "They heard the good news and were filled with #",
+      "joy",
+      "anger"
+    ],
+    [
+      "After the long journey, the travelers were #",
+      "exhausted",
+      "energetic"
+    ],
+    [
+      "The joke was so funny that everyone started #",
+      "laughing",
+      "screaming"
+    ],
+    [
+      "He missed the bus and felt very #",
+      "disappointed",
+      "pleased"
+    ],
+    [
+      "She received a gift and felt incredibly #",
+      "grateful",
+      "upset"
+    ],
+    [
+      "During the scary movie, they were all #",
+      "terrified",
+      "bored"
+    ],
+    [
+      "After hearing the sad story, she felt #",
+      "sympathetic",
+      "amused"
+    ],
+    [
+      "He achieved his goal and was very #",
+      "proud",
+      "ashamed"
+    ]
+  ],
+  "narrative understanding": [
+    [
+      "The boy climbed the tree to retrieve his #, but he couldn't reach it.",
+      "kite",
+      "apple"
+    ],
+    [
+      "She was very happy on her birthday because she got a # from her best friend.",
+      "gift",
+      "letter"
+    ],
+    [
+      "After the long journey, the traveler was # and fell asleep quickly.",
+      "tired",
+      "hungry"
+    ],
+    [
+      "The dog wagged its tail and barked when it saw its owner # the door.",
+      "open",
+      "paint"
+    ],
+    [
+      "The sun set, and the campers sat around the # to tell stories.",
+      "fire",
+      "table"
+    ],
+    [
+      "He forgot his umbrella at home, so he got # in the rain.",
+      "wet",
+      "lost"
+    ],
+    [
+      "The artist smiled as she put the final # on her painting.",
+      "brushstroke",
+      "frame"
+    ],
+    [
+      "The detective found a clue that led him to the # of the mystery.",
+      "solution",
+      "beginning"
+    ],
+    [
+      "When she heard the good news, she jumped up and down with #.",
+      "joy",
+      "fear"
+    ],
+    [
+      "The old pirate map led them to a hidden treasure # on the deserted island.",
+      "chest",
+      "boat"
+    ]
+  ],
+  "ethics": [
+    [
+      "Helping someone in need is the # thing to do",
+      "right",
+      "useless"
+    ],
+    [
+      "It is our duty to # for those who cannot defend themselves",
+      "stand up",
+      "care less"
+    ],
+    [
+      "Respecting others' opinions is a sign of # maturity",
+      "good",
+      "poor"
+    ],
+    [
+      "Breaking a promise can # trust",
+      "damage",
+      "build"
+    ],
+    [
+      "It is unethical to # someone's private information without consent",
+      "share",
+      "protect"
+    ],
+    [
+      "Cheating to win a game is # acceptable",
+      "never",
+      "always"
+    ],
+    [
+      "Respecting someone's privacy is #",
+      "essential",
+      "trivial"
+    ],
+    [
+      "Spreading rumors about others is #",
+      "harmful",
+      "beneficial"
+    ],
+    [
+      "Forgiving someone shows #",
+      "generosity",
+      "weakness"
+    ],
+    [
+      "Stealing is an # act",
+      "unethical",
+      "honorable"
+    ]
+  ]
+}
