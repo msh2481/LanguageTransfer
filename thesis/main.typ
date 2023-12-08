@@ -23,6 +23,7 @@
 #pagebreak()
 
 = Introduction
+#note[
 - a lot of money is spent on pretraining large language models, we are running out of data
     - draw a history of ML, from deep learning to LLMs, cite @villalobos2022will
 - recently there were several results indicating that high-quality datasets can help to reduce the model size preserving the performance
@@ -37,11 +38,12 @@
     - hierarchy of languages, introducing new language
     - when we fine-tune only embeddings, do they have a similar structure for the new language?
     - when limited in size, what models learn about English after pre-training on a certain synthetic task: word-level knowledge, word relations, sentence structure?
-
-
+]
 
 
 = Background and motivation
+
+#note[Rewrite these parts]
 
 Machine learning systems are rapidly becoming more powerful. Data-driven methods can model increasingly more complex domains, so for example training a super-human image classifier @he2015delving or a language model which is super-human in terms of perplexity @shlegeris2022language is now mostly an engineering problem. However, even the amount of unlabeled data is limited and might be exhausted in this decade @villalobos2022will. This problem is even more pressing for the tasks which require human supervision or that are rarely found in web data. Which means that to get more powerful and universal machine learning systems simply collecting more diverse data is not enough and one need methods that can generalize efficiently under distribution shifts. Moreover, to be able to scale AI to superhuman levels safely without unexpected or undesired capabilities @hendrycks2023overview it is important to understand precisely in what ways these systems generalize.
 
@@ -89,7 +91,6 @@ A useful inductive bias can be instilled into the model by pre-training on data 
 
 
 #note[Use proper format for citet-style citations]
-#note[Rewrite these parts]
 
 
 == Properties of a trained model related to generalization
@@ -121,72 +122,29 @@ Of course, to be able to induce a certain inductive bias the model being pretrai
 
 == Open questions
 
-The framework is from @papadimitriou2020learning, using Transformers and fine-tuning their LayerNorm is from @lu2021pretrained, and testing tasks are from @kharitonov2020they. Interpretability as in @elhage2021mathematical.
-
-*Overview*:
-Take a single model, something like `GPT-2` or `TinyStories`. Pre-train it on different L1, then transfer to L2 and test there. Also, for synthetic languages, check what happens inside the pre-trained model, and how these mechanisms are used in transfer task.
-
-*L1*:
-- TinyStories
-- Baseline: no pretraining, but mean and std matched to pretrained model
-- Nested dependencies: `<1 <2 <3 3> 2> 1>`
-- Flat shuffle: `<0 <3 3> <1 <2 1> 2> 0> <8 <7 7> <9 9> <6 6> 8> ...`
-- Grammar induction: (have both recursive and context-free components): `A B A C A B A # a x b b a x c a x ...`
-
-*L2*:
-- Everything from L1
-- Count or memorization: `(aaa, bbb)` in train, `(aa, bb or bbb)` in test
-- Memorize or add or multiply: `(aa, bbbb)` in train, `(a, bb or bbb or bbbb)` in test
-- Hierarchical or linear: `(aabaa, b)` in train, `(aba, a or b)` in test
-- Composition or memorization: `(a, a)`, `(b, b)`, `(thrice a, aaa)` in train, `(thrice b, bbb or b)` in test
-
-*Transfer*:
-- Inputs and outputs only
-- Inputs, outputs and LayerNorm affine parameters
-- Inputs, outputs, LayerNorm and the last Transformer block
-- #strike[Parameter-efficient fine-tuning]
-- #strike[Whole model]
+As mentined above, there were many works that studied transfer learning from artificial datasets to natural language, for variety of model architectures, datasets and fine-tuning methods. However, they all report only superficial metrics, like losses and perplexities. To shed light on what actually happens during such transfer, in this work I use diverse analysis techniques to get richer observations of this process and as a result, hopefully, get deeper insights. In particular, I use the following methods:
+- Compare the complexity of synthethic languages by training a model on one language and then fine-tuning to another.
+- To get more feedback from these experiments, fine-tuning is done in several stages, each one allowing more complexity to be learned.
+- Study the structure of the embedding space, in terms of the singular values of correlation matrix and by running KMeans algorithm on it with different number of clusters.
+- Train linear probes to predict grammatical features of the words represented by tokens and their frequency, thus showing what information might be contained in the embeddings.
+- Introduce a new natural languge understanding dataset tailored for less capable models which benchmarks the model performance on 12 diverse subtasks.
 
 = Experiments
 
-1. Generate synthetic datasets for L1, $10^9$ tokens each.
-  #note[Check the dependency length distribution.]
-2. Implement tokenizers for each. (How it is done in other papers?)
-  #note[Check that tokens are split as expected, and that the total number is right.]
-2. Train `tiny-stories-8M` from `TransformerLens` on each, as in @papadimitriou2023injecting. Vocabulary size is different for different tasks. Should not take more than a GPU-day for each. Cloud computing to parallelize the process, DVC and containers to make it easy to deploy and cool to present.
-  #note[Overfit one batch to check training code. Save checkpoints during training to study the emergence of structure later. Also save sample generations at each stage, to observe what the model learns on-the-fly.]
-3. Generate synthethic datasets for L2. These will be quite small, maybe $10^3$ tokens. Tokenizers for these too.
-4. Implement fine-tuning which saves in checkpoints only the trained parameters (if Lightning doesn't do it by default).
-  #note[Overfit all types of fine-tuning on something small, check that heavier fine-tuning gives lower loss. ]
-5. For each L1 model, and each L2 language, and each type of fine-tuning: Run the fine-tuning until convergence, save checkpoints on exponentially spaced timesteps. Each experiment should not take long, but now there are about $(binom(5, 2) + 5 times 5) times 3 = 105$ of them. Expect it to take approximately one more GPU-day. As only a small fraction of parameters is trained, checkpoints should not take much space.
-6. Plot a $6 times 10 times 3$ matrix with transfer loss for each pair of languages and each level of fine-tuning.
-7. For each L2 language visualize outputs of different L1 models and levels of fine-tuning, including the model pre-trained on this L2 from scratch, if there is one. First, a list of sample generations. Second, visualize losses on samples from the dataset, especially those where the logits differ a lot. Third, compute distances between them based on divergences of their output distributions, show it with PCA.
-8. Synthetic tasks are supposed to work better than random initialization, now it's time to find why. First, find positions which have small loss for transfer models and high loss for baseline. Pick representative examples from them.
-9. Replace parts of the model with the untrained version with matched mean and std, check performance drops. This will highlight all necessary components.
-10. Check attention patterns for the remaining heads, both on L1 and L2. Try to understand what they do and why is it important for the new task.
+== Synthethic languages
+Following hyperparameter choices from @papadimitriou2023injecting, for each of the languages descrbed below I use sequence length of $512$, vocabulary size of $500$, and generate $2 dot 10^6$ sequences so the total size of the dataset is approximately $10^9$ tokens in each case.
 
-== Datasets
-For each artificial language I generate words from it and save each as an indivudial sample. I chose Parquet format, because it is efficient in reading, and also allows to create dataset one batch per time and thus not be limited by the amount of RAM.
-
-By iterative writing I mean the following approach:
-```python
-def write_to_parquet(
-    output_file: str,
-    batch_size: int,
-    total_size: int,
-    generator: Callable[[int, int], pa.RecordBatch],
-):
-    schema = pa.schema([pa.field("text", pa.string())])
-    with pq.ParquetWriter(output_file, schema) as writer:
-        for start in tqdm(range(0, total_size, batch_size)):
-            end = min(start + batch_size, total_size)
-            batch = generator(start, end)
-            writer.write_batch(batch)
-```
 
 
 === `nested`
-This dataset consists of matched token pairs nested in each other. It is generated by the following algorithm:
+The predcessor of this dataset was introduced in @papadimitriou2020learning. They used stack-based grammar to generate sequences, where each token occurs twice and two pairs of tokens either do not intersect or one is nested in another. In other words, balanced bracket sequence with multiple types of brackets.
+
+@ri2022pretraining suggested to use different tokens for opening and closing brackets, and found improved performance. I chose to implement this version, so there are $250$ tokens for open brackets and $250$ tokens for closing ones.
+
+Regarding the sampling algorithm for this language, tokens are generated sequentially and on each step a random decision is made whether to open a new bracket or to close an existing one. If the stack of open brackets is empty or there is not enough space before the end of sequence, there is only one option. In other cases an openning bracket is chosen with probability $0.4$ and then the type of bracket is sampled uniformly.
+
+
+Generation algorithm in Python:
 ```python
 def nested_dependencies_sequence(
     seq_len: Even,
@@ -209,9 +167,7 @@ def nested_dependencies_sequence(
             data[i] = 2 * tp + 1
     return tokenizer.decode(data)
 ```
-
-Regarding the choice of parameters I follow @papadimitriou2023injecting and set `seq_len=512, vocab_size=500`, and generate approximately $10^9$ tokens in total, i.e. 2M sequences. I use uniform probabilities for all tokens.
-
+#pagebreak()
 An example word from it, with the matching pairs highlighted:
 
 #let s = "<237 237> <249 249> <24 24> <162 162> <175 <211 <59 59> 211> 175> <233 233> <6 6> <13 13> <151 <106 <243 243> <83 83> 106> 151> <137 <207 <171 171> <50 50> 207> <107 107> <54 54> 137> <89 89> <71 71> <91 91> <75 75> <12 12> <127 <21 21> 127> <240 240> <229 <87 <212 <92 <198 <121 121> <101 101> 198> <33 33> <197 197> <184 184> 92> 212> 87> 229> <9 9> <12 12> <110 110> <112 112> <154 154> <50 50> <175 <221 221> 175> <220 220> <148 148> <141 141> <52 <115 115> <121 121> 52> <190 <196 196> 190> <229 <61 <93 <222 <63 63> 222> 93> <185 185> 61> <204 204> 229> <185 185> <151 151> <222 <245 245> 222> <156 156> <127 127> <34 34> <81 <47 <170 <178 178> 170> 47> 81> <14 14> <21 21> <246 246> <122 122> <228 228> <169 169> <118 <7 7> <131 131> <24 <164 <156 <29 29> 156> 164> 24> 118> <233 233> <65 65> <203 203> <169 169> <71 <72 72> <19 <22 22> 19> <227 227> <221 221> 71> <205 205> <10 <179 179> 10> <46 46> <249 249> <250 <115 <24 <165 165> <123 123> 24> 115> 250> <102 102> <76 <54 54> <206 <132 <235 235> <119 <221 221> 119> 132> 206> <248 <19 <210 210> 19> <184 <76 76> <59 59> 184> 248> <99 99> <191 <60 60> <86 <7 <197 197> <202 <240 <128 <170 170> 128> <63 63> 240> <18 18> 202> 7> <147 147> 86> 191> <176 <194 194> <88 88> 176> <77 77> <213 213> <216 216> 76> <130 <196 <244 244> <190 190> 196> 130> <44 <60 <122 <118 <59 59> 118> 122> <142 142> <57 57> <40 40> 60> 44> <168 <39 <76 76> <131 131> 39> 168> <86 <205 205> <65 65> 86> <16 <157 157> <103 <4 4> 103> <242 242> <96 <156 156> <24 24> 96> 16> <229 229> <137 <203 <7 <109 <84 <182 <170 170> <221 <211 211> <26 26> 221> <27 27> 182> 84> 109> 7> <84 84> <38 <88 <139 139> <183 183> 88> 38> 203> <107 <201 201> 107> 137> <72 72> <35 <178 178> <35 35> 35> <192 192> <125 125> <49 49> <151 151> <143 <44 44> 143> <3 3> <11 <4 <124 124> 4> <29 <197 <10 <190 190> <102 <14 14> <226 <79 <240 240> 79> 226> 102> 10> 197> <183 <180 180> 183> 29> 11> <46 46> <133 <203 203> 133> <175 175> <65 65> <120 120> <42 42> <115 <121 121> 115> <14 14> <8 8> <46 46> <56 <164 164> <35 35> <82 <155 <125 125> <20 <58 <122 <70 70> 122> 58> 20> 155> 82> 56> <151 151> <223 <123 123> 223> <44 <25 25> 44> <121 121> <115 115> <4 <11 <37 <212 212> <109 <49 49> 109> 37> <9 <30 <210 210> 30> 9> 11> <208 208> <135 <221 <200 200> 221> <101 101> <204 <8 <51 <177 177> 51> 8> 204> 135> 4>"
@@ -230,13 +186,18 @@ An example word from it, with the matching pairs highlighted:
 
 }
 
+#box(stroke: 1pt + blue, radius: 5pt, inset: 10pt)[
 #for value in s.split() {
     text(raw(value + " "), fill: get_color(value), weight: 400, size: 6pt)
 }
+]
 
 === `flat`
-This dataset is almost like the previous one, but instead of stack-based grammar the decision which token to close now it made uniformly randomly among all currently open tokens. All parameters are the same.
+This language is similar to the previous one and was introduced and enhanced in the same works. The only difference is that the nesting property can be violated. 
 
+In terms of sampling it means that when a bracket should be closed, now there is more than one possibility. I select the bracket to close uniformly from all currently open ones.
+
+Generation algorithm in Python:
 ```python
 def flat_dependencies_sequence(
     seq_len: Even,
@@ -261,20 +222,29 @@ def flat_dependencies_sequence(
     return tokenizer.decode(data)
 ```
 
-An example world:
 
 #let s = "<216 216> <148 <46 148> 46> <65 <232 65> <225 <199 232> <123 225> <28 123> <106 106> <39 <88 <173 39> <64 199> 64> <132 173> 88> 132> <127 28> 127> <176 <95 <1 <110 95> 1> <143 176> <4 143> <127 <215 <157 <95 110> 127> 157> 95> 215> 4> <114 114> <167 167> <40 <134 <200 <40 40> <232 200> <131 <12 131> <35 <51 232> <242 <216 <207 242> <32 <20 40> 20> <96 32> 35> 51> 207> 12> 216> 96> 134> <31 <214 31> 214> <133 133> <76 76> <33 33> <62 62> <55 55> <182 <219 182> 219> <90 90> <122 122> <99 99> <243 243> <243 243> <108 <63 108> 63> <77 <68 77> 68> <195 195> <177 177> <148 148> <89 <193 193> 89> <34 34> <246 246> <151 151> <92 92> <166 166> <21 21> <194 194> <219 <105 219> <72 105> <150 <146 150> <123 146> 72> <162 <135 <125 135> <106 125> 123> 106> <229 <68 <47 229> 47> <174 174> 162> 68> <29 <238 238> <250 <136 250> <23 <152 152> 136> 23> 29> <189 <246 <54 <151 246> 189> <225 225> 151> 54> <197 197> <32 32> <50 50> <144 144> <139 <100 139> 100> <114 <38 38> 114> <60 <64 64> <102 <107 <155 155> 102> 107> 60> <243 <113 <55 113> 55> 243> <151 151> <59 <59 59> 59> <234 234> <152 <233 <197 <125 <9 <36 <9 <199 <129 152> <48 9> 125> <55 48> 129> 36> <65 65> 9> 199> 233> 197> 55> <8 <165 8> <94 94> 165> <147 <238 147> 238> <150 <107 107> <179 <116 <125 <6 150> <102 125> 179> 102> 6> <197 <195 <219 <146 197> 195> <208 <173 208> <47 146> 173> 219> <161 161> 116> <249 <151 <104 47> <70 104> <141 70> 141> <213 <136 <11 11> <234 <83 <78 83> 249> 151> 213> 136> <12 <117 <248 <240 234> 12> 78> <17 17> <62 62> <204 248> 117> 240> 204> <24 <14 24> <46 14> 46> <228 228> <26 26> <222 222> <52 52> <182 182> <131 <189 131> <72 189> 72> <111 111> <123 <236 123> 236> <12 12> <70 <124 70> 124> <146 <179 179> 146> <85 85> <218 <220 218> <193 220> 193> <187 187> <57 <134 57> <208 134> <235 208> <122 <177 177> <151 <20 151> 122> <103 20> <164 <54 54> 235> 103> 164> <224 224> <146 146> <144 144> <122 122> <95 <212 212> <204 95> 204> <20 <144 20> 144> <108 <116 116> 108> <35 35> <45 <5 45> 5> <248 <247 248> 247> <12 <245 12> <226 <94 226> 245> 94> <233 <244 233> 244> <231 231> <137 137> <140 <227 227> 140> <211 211> <90 90> <111 <165 111> <104 104> 165> <216 <137 137> 216> <112 <8 112> 8> <226 226> <157 157> <50 <178 <60 <57 178> <5 <205 50> 205> <174 60> <248 248> 174> 57> 5> <200 <218 200> 218> <87 87> <180 180> <169 169> <248 248> <132 <116 116> 132>"
 
+#pagebreak()
+
+An example world:
+
+#box(stroke: 1pt + blue, radius: 5pt, inset: 10pt)[
 #for value in s.split() {
     text(raw(value + " "), fill: get_color(value), weight: 400, size: 6pt)
 }
+]
 
 
 === `flat_shuffle`
+The languages described above are each based on a single rule. While such simplicity certainly makes analysis easier, I hypothesized that adding more complexity into the data can improve model performance.
 
-It is a combination of the previous dataset with the idea of implicit connections between tokens, as implemented in `Shuffle` languages from @chiang2022transferability. The idea behind it is that perhaps by adding more structure into the dataset, especially different kinds of structure, we can get a model with more interesting internal representations.
+I decided to use an idea of `Shuffle` languages from @chiang2022transferability as an extra pattern, because it was orthogonal to the bracket balancing essence of the previous datasets. The combined dataset is based on `flat`, but each consecutive group of $16$ tokens has a range of $8$ bracket types assigned to it, and all brackets on this segment are sampled only from these types. That is, each such group is a permutation of the corresponding brackets.
 
-The only difference from the previous dataset is that types of opening brackets are now sampled not independently but in groups, where for each group tokens are first selected as a consecutive range of integers and then shuffled. Generating code:
+It adds two interesting dynamics to the task of next token prediction. When in the middle of the sequence, the model needs to look at previous tokens to guess the range of bracket types. And when close to the end of permutation, the model can guess increasingly more accurately by remembering which tokens were already used. In particular, the last token in each permutation can be predicted with certainty. Surprisingly, even small Transformer models were able to capture this pattern and indeed predicted the last token with close to zero loss.
+
+#pagebreak()
+Generation algorithm in Python:
 ```python
 def flat_shuffle_sequence(
     seq_len: Even,
@@ -305,23 +275,41 @@ def flat_shuffle_sequence(
     return tokenizer.decode(data)
 ```
 
-Example word:
 #let s = "<58 <61 61> <54 58> 54> <57 57> <55 <56 <60 56> <59 55> 60> 59> <120 <121 120> 121> <125 <124 124> 125> <127 127> <123 123> <122 <126 126> 122> <147 147> <153 153> <148 148> <150 150> <151 151> <149 <152 152> 149> <154 <79 154> 79> <74 74> <75 75> <76 76> <81 <80 81> 80> <78 78> <77 77> <23 23> <21 21> <24 24> <26 26> <28 28> <25 <27 27> <22 22> <31 25> 31> <25 25> <26 <30 <29 <27 27> <32 32> <28 <127 30> 127> <130 130> 29> <134 134> <132 26> 132> 28> <131 <129 129> <128 <133 131> 133> <77 <75 77> 128> <78 <74 78> 75> 74> <80 <79 80> 79> <76 <81 <87 <82 <81 <80 80> 87> 76> 82> <84 81> 81> <85 84> <86 <83 86> 83> <32 <30 32> <34 30> 34> <29 85> <31 31> <33 29> <35 33> <36 <50 36> 35> <54 <51 <57 54> 51> 50> 57> <53 53> <55 55> <56 <52 56> 52> <166 166> <171 171> <170 170> <165 <169 <167 169> <168 167> 168> 165> <164 164> <194 194> <195 <190 <189 189> <196 <192 <193 195> 193> 190> 192> <191 196> 191> <110 110> <104 <106 106> <103 <107 <105 103> 104> <109 107> 105> <108 <128 109> 128> 108> <131 <127 131> 127> <132 132> <126 126> <125 125> <130 130> <129 <231 <236 129> <229 <232 231> <230 <233 230> <235 236> 229> 233> 235> 232> <234 <222 222> <218 218> 234> <223 223> <216 216> <217 217> <221 221> <220 220> <219 219> <6 6> <5 5> <8 <10 8> <12 <9 10> <11 11> 9> 12> <7 <110 7> 110> <115 115> <112 <114 112> 114> <111 111> <116 116> <109 109> <113 113> <101 101> <99 99> <102 102> <100 100> <105 105> <104 <98 <103 <42 <40 98> <39 <38 103> <41 <37 <43 104> <44 42> 44> 41> 40> 37> 38> 43> 39> <144 144> <150 150> <147 147> <146 146> <151 151> <149 149> <145 145> <148 <17 <21 17> 148> <15 21> <14 15> <20 <19 <18 20> <16 <33 14> <31 33> <37 <35 <36 19> 36> 37> <32 <34 <38 <159 <152 <158 <157 <155 <156 32> 35> <154 155> 159> <153 <98 157> <95 95> 31> 158> <99 <97 98> 154> <96 96> <100 <93 <94 94> <199 100> 18> 38> 199> 99> <204 97> 156> 204> <200 153> 93> 34> 152> <201 201> 200> 16> <198 198> <202 <203 202> 203> <197 197> <235 <229 <233 229> 233> 235> <232 232> <230 <234 <236 234> 230> <231 231> <91 91> 236> <95 <92 95> <94 <90 90> 92> <93 <96 96> 94> 93> <89 89> <186 186> <187 187> <185 185> <188 188> <192 192> <189 189> <191 191> <190 190> <115 115> <114 114> <112 112> <118 <111 111> 118> <116 116> <117 117> <113 113> <141 141> <142 142> <136 136> <140 140> <135 <138 135> <137 137> <139 139> 138>"
 
+
+Example word:
+#box(stroke: 1pt + blue, radius: 5pt, inset: 10pt)[
 #for value in s.split() {
     text(raw(value + " "), fill: get_color(value), weight: 400, size: 6pt)
 }
+]
 
-== Transfer learning metrics
+#pagebreak()
+== Hierarchy of language complexity
 
-To get a better 
-Pre-training:
-- Finished early, when the training stagnated and loss came close to theoretical optimum.
+=== Methodology
 
-Fine-tunings:
+Some languages, both synthethic and naturals, are more complex than others. For example, it is much easier to understand the concept of balanced bracket sequences than to learn Chinese. Moreover, some languges can be understood easier if the learned already knows another language, e.g. humans need less effort to switch to a language from the same language family and large language models can be fine-tuned to a similar downstream task by using much less data than was used for their pre-training. But how to formalize this notion of complexity and similary, and how to measure it?
+
+One approach is the Chomsky hierarchy of languages @chomsky1956three. It formally defines several classes of grammars, each one strictly more general than the previous one, and the properties of these classes are very well understood. It is very useful as a high-level formalization of language complexity, which can show that one language is qualitatively more complex than another. For example, `nested` is a context-free language, while `flat` is context-dependent. But for languages from the same class we need some other tool to find more fine-grained differences.
+
+As the main topic of this work is transfer learning, a natural approach is to use transfer learning metrics to estimate both the complexity and similarity of languages. For a given language pair I pre-train a language model on the first language and then fine-tune it on the second language, in several stages. On the first stage I freeze all model parameters except for embeddings and unembeddings, so that the internal computations are preserved as much as possible. On the second stage the affine parameters of LayerNorms are also fine-tuned, which allows the model to re-scale the intermediate activations and thus focus on different features. Finally, the last Transformer block is fine-tuned, which allows some amount of arbitrary task-specific computation. I don't consider fine-tuning all parameters, because in the limit it can reach the same performance as the model trained on the second language from scratch and it will be not informative.
+
+An important obseration is that transfer learning between languages is not symmetric, and it allows to estimate both (relative) complexity and similarity of two languages. If languages are similar, fine-tuning should go well in both directions, so we can take average difficulty of fine-tuning from both directions as a measure of similarity. And if one language is more complex than another, at least in a sense of having strictly more patterns, one would expect fine-tuning to run much easier from the hard language to the easy one, so comparison of two directions allows us to reason about hierarchy of languages in terms of complexity.
+
+This procedure is not completely formalized, in particular, I don't have a principled way to measure the "difficulty" of fine-tuning. An approach that seems reasonable is to look at the first stage of fine-tuning which is enough to get the performance close to the performance of the model pre-trained on the second language. 
+
+=== Results
+#note[Why TinyStories-8M? What hyperparameters?]
+
+In the table below there are the results of fine-tuning in both directions on certain pairs of languages. Columns "L2 ..." describe fine-tuning on the second language after pre-training on the first one, "L2 full" is the performance of the model trained on the second language from scratch. Columns "L1 ..." and "L1 full" are symmetrical, for fine-tuning on the first language. "E", "L" and "T" mean what layers were fine-tuned and stand for embeddings, LayerNorms and (the last) Transformer block. I use the absolute difference of 0.2 nats per token as a threshold for "close performance". 
+
+
 
 #let finetuning = csv("finetuning.csv")
 #set text(size: 7pt)
+
 #table(
     columns: (60pt, 60pt) + (auto,) * 8,
     fill: (col, _) => if (col < 2 or col == 5 or col == 9) { luma(240) } else { white },
@@ -334,11 +322,138 @@ Fine-tunings:
 [nested],[english],[2.82],[2.65],[2.37],[1.19],[3.83],[*3.46*],[*3.32*],[3.32],
 [flat],[english],[2.74],[2.56],[2.35],[1.19],[4.28],[4.16],[*3.76*],[3.78],
 )
-#note[12.9M out of 19.7M (i.e. 65%) parameters are embeddings.]
+
+#set text(size: small-size)
+The first two rows show that `flat` is more complex than `nested` and `flat_shuffle` is more complex than `flat`, in a sense of being more general, because fine-tuning in the direction `flat_shuffle` #sym.arrow `flat` #sym.arrow `nested` achieves good performance simply by replacing the embeddings.
+The remaining measurements showo that English is more complex than all synthetic languages used here, but it is also quite different, as the models needs more flexibility to adapt from English to e.g. `flat` and `flat_shuffle`.
 
 == Word-level information
+There are non-trivial performance gains in all language pairs from simply tuning the embeddings, so in this section I am going to analyze the structure of the embedding space and what information about words can be extracted from the embeddings.
 
-#image("../img/spectrum.svg", height: 300pt)
-#image("../img/clusters.svg", height: 300pt)
+=== Dimensionality and clusters
+
+The embedding dimension of the model used is $d = 256$, and human intuition, as well as many visualization techniques, works poorly for $256$-dimensional vectors, so I employ two quantatitive approaches.
+
+First, for a $n times d$ matrix of embeddings $E$, I consider its singular values (after zeroing out the mean of each column), or equivalently, the spectrum of the covariation matrix $A = E^T E$. The motivation behind this is that if all embeddings were contained in a $k$-dimensional subpace, and $E$ had a rank $k$, then only $k$ of the singular values would be nonzero. For real data it is not the case, all singular values are nonzero due, but still some directions have much larger variance then others and the model is more likely to use features corresponding to those dimensions. 
+
+As we see in the figure below, in models pre-trained on synthetic datasets the spectrum is dominated by the first few dimensions. In particular, before the fine-tuning, most of the interesting information about brackets is described by two axes: open-close and low-to-high bracket type id. And while they learn more diverse features during fine-tuning on English, as described in the next sections, they still don't use the embedding space very efficiently. But the interesting observation is how the tail of the spectrum behaves for models trained on different datasets: spectrum of `flat` decays to zero slower than the one of `nested`, but the shape is similar, while the spectrum of `shuffle` crosses `flat` at some point and behaves more similar to the spectrum of the model trained on English from scratch. 
+
+#align(center)[#image("../img/spectrum.svg", height: 250pt)]
+
+Another interesting property is how the embeddings are clustered. To quantify it, I run KMeans clustering for the embeddings varying the number of clusters and compare the plots of unexplained variance (inertia). Again, after pre-training on a synthethic language the models have only two clusters: open and close brackets, and even after fine-tuning the first few splits explain the majority of variance. But looking at the tail behaviour we observe a similar pattern: English is followed by `flat_shuffle`, then by `flat` and then by `nested`.
+
+#align(center)[#image("../img/clusters.svg", height: 250pt)]
+
+#pagebreak()
+=== Linear probes for word features
+
+Now that we know something about the structure of the embedding space, a natural question to ask is how this structure is used. In other words, what information about a word can one extract from the embedding of the corresponding token.
+
+Preliminary experiments showed that clusters of features correspond to properties like "noun", "3rd person verb", "adjective or adverb", etc. Therefore I decided to use part-of-speech tags provided by NLTK library as targets. Initially there were more than $30$ unique tags in the dataset, but many of them were very rare. After filtering out all tags with less than $200$ occurences the following tags remained:
+- CD: cardinal digit
+- IN: preposition or subordinating conjunction
+- JJ: adjective
+- NN: singular noun
+- NNP: proper noun
+- NNS: plural noun
+- RB: adverb
+- VB: base form verb
+- VBD: past tense verb
+- VBG: gerund
+- VBN: past participle
+
+I added a feature indicating the frequency of the token in the training corpus, because typically the direction with the most variance in the embedding space roughly corresponded to frequency. And the last feature is whether the token starts with a whitespace, as some clusters had disproportionate amount of such tokens.
+
+For each of the models and each of the features I trained a ridge regression (for frequency) or a logistic regression (for all other variables, as they are boolean) on $80%$ of the embeddings and then evaluated their $R^2$ score or ROC-AUC on the remaining $20%$.
+
+
+#table(
+    columns: (60pt,) + (auto,) * 4,
+    fill: (col, row) => if (col == 0 or row == 0) { luma(255) } else { white },
+    align: (left,) + (center,) * 4,
+    stroke: 0.3pt,
+
+[],[*nested*],[*flat*],[*shuffle*],[*scratch*],
+[`frequency`],[0.84],[0.85],[0.85],[0.93],
+[`start_space`],[0.70],[0.70],[0.70],[0.89],
+[`pos_tag_CD`],[0.66],[0.63],[0.63],[0.80],
+[`pos_tag_IN`],[0.76],[0.79],[0.71],[0.87],
+[`pos_tag_JJ`],[0.60],[0.58],[0.60],[0.73],
+[`pos_tag_NN`],[0.63],[0.62],[0.63],[0.76],
+[`pos_tag_NNP`],[0.64],[0.65],[0.63],[0.79],
+[`pos_tag_NNS`],[0.67],[0.67],[0.68],[0.84],
+[`pos_tag_RB`],[0.69],[0.63],[0.64],[0.84],
+[`pos_tag_VB`],[0.71],[0.69],[0.68],[0.79],
+[`pos_tag_VBD`],[0.75],[0.71],[0.67],[0.89],
+[`pos_tag_VBG`],[0.71],[0.70],[0.73],[0.89],
+[`pos_tag_VBN`],[0.72],[0.68],[0.72],[0.87],
+[*Average*],[0.70],[0.68],[0.68],[0.84],
+)
+
+All probes in for all models perform better than random, so every model learns at least something related to this features. The embeddings of the model trained on English from scratch predictably outperformed the others, but the quality of other embeddings turned out to be on average the same. Perhpaps the difference in effective dimension between the models is used not for this relatively simple single word features, but for word meanings, sentence structure and so on.
+
+== Cloze tests
+
+To assess how good the models are in understanding language in general a different benchmark is needed. As the models studied are too small for reliable question answering, reasoning and other high-level cognitive skills, the test should be as simple as possible, ideally just measuring perplexity on some texts. There are several already existing datasets for natural language understanding, such as GLUE @wang2018glue and MMLU @hendrycks2020measuring, and they have many diverse subtasks, but they focus on more complex tasks.
+
+Instead, I used GPT-4 @openai2023gpt4 to generate a set of cloze infilling questions in simple English. There are the following $12$ subtasks, each with $10$ cloze questions:
+- Synonyms and antonyms.
+- Logical relations. 
+- Subject-verb agreement.
+- Prepositions.
+- Conjunctions.
+- Temporal understanding.
+- Spatial understanding.
+- Quantitative reasoning.
+- Emotions.
+- Narrative understanding.
+- Ethics.
+
+Each cloze question consists of a prompt with a cloze marker, a correct answer and an incorrect answer. For each question the difference between log-probabilities of the correct and incorrect answers is measured and then averaged across each subtask.
+
+An example from the temporal understanding subtask:
+
+#box(stroke: 1pt + blue, radius: 5pt, inset: 10pt)[
+```json
+[
+    "She ate breakfast # she went to school",
+    "before",
+    "after",
+]
+```
+]
+
+For each of the synthetic languages I used two models, one where only the fine-tunings were adapted to English (E) and another with all three stages (ELT). I compared them to the model of the same architecture trained on English from scratch, and also to a four times bigger model trained on English from scratch to see which metrics can be improved.
+#pagebreak()
+
+#table(
+    columns: (90pt,) + (auto,) * 8,
+    fill: (col, row) => if (col == 0 or row == 0) { luma(255) } else { white },
+    align: (left,) + (center,) * 8,
+    stroke: 0.3pt,
+[],[*nested ELT*],[*nested E*],[*flat ELT*],[*flat #h(0.3em)  E*],[*shuffle ELT*],[*shuffle E*],[*scratch 8M*],[*scratch 33M*],
+[#text(`synonyms and antonyms`, 7pt)],[0.18],[0.24],[0.13],[0.22],[0.25],[0.31],[0.25],[0.28],
+[#text(`single plural`, 7pt)],[0.15],[0.08],[0.50],[0.19],[0.33],[0.03],[0.58],[0.71],
+[#text(`logical relations`, 7pt)],[-0.30],[-0.08],[-0.18],[-0.44],[-0.08],[-0.13],[-0.04],[0.09],
+[#text(`subject verb agreement`, 7pt)],[0.45],[0.54],[0.36],[0.46],[0.26],[0.14],[0.83],[0.98],
+[#text(`prepositions`, 7pt)],[0.52],[0.43],[0.53],[0.51],[0.48],[0.40],[0.94],[1.12],
+[#text(`conjunctions`, 7pt)],[0.43],[0.46],[0.38],[0.45],[0.49],[0.36],[0.63],[0.82],
+[#text(`temporal understanding`, 7pt)],[-0.02],[-0.13],[0.04],[-0.14],[0.36],[0.09],[0.44],[0.73],
+[#text(`spatial understanding`, 7pt)],[0.30],[0.13],[0.48],[0.40],[0.37],[0.06],[0.64],[0.71],
+[#text(`quantitative reasoning`, 7pt)],[0.00],[-0.06],[-0.01],[-0.14],[-0.04],[-0.14],[-0.04],[-0.06],
+[#text(`emotions`, 7pt)],[0.03],[-0.08],[0.07],[0.05],[-0.01],[0.20],[0.61],[0.77],
+[#text(`narrative understanding`, 7pt)],[-0.04],[-0.07],[0.07],[0.03],[0.04],[0.04],[0.17],[0.27],
+[#text(`ethics`, 7pt)],[0.17],[0.32],[0.22],[0.34],[0.30],[0.27],[0.25],[0.51],
+[*Average*],[0.16],[0.15],[0.22],[0.16],[0.23],[0.14],[0.44],[0.58],
+)
+
+In terms of general trends there are two interesting observations. First, models with all three stages of fine-tuning are better, predictably, than their counterparts having only the embeddings tuned, but this difference is more pronounced in `flat` and `flat_shuffle`. The question why is it so remain open for the future work. Second, a familiar pattern appears again, `nested` < `flat` < `flat_shuffle` < `scratch`, which proves the superiority of the introduced `flat_shuffle` dataset.
+
 
 = Conclusion
+
+#note[Say something about hypotheses, e.g.:
+- Complex synthethic languages lead to better results, as demonstrated by embedding structure and cloze test performance of `flat_shuffle`
+- Models are not strictly limited by the complexity of the synthethic dataset and can learn features that don't have direct analogy in the pre-training task 
+- Perhaps a more sophisticated pre-training dataset simply causes the model to have richer structure, which then can be used in completely different ways during transfer learning, as in reservoir computing
+]

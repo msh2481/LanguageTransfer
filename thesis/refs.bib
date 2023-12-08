@@ -1,10 +1,10 @@
 # Pretraining
 
 @article{papadimitriou2020learning,
-  title={Learning music helps you read: Using transfer to study linguistic structure in language models},
-  author={Papadimitriou, Isabel and Jurafsky, Dan},
-  journal={arXiv preprint arXiv:2004.14601},
-  year={2020}
+  title   = {Learning music helps you read: Using transfer to study linguistic structure in language models},
+  author  = {Papadimitriou, Isabel and Jurafsky, Dan},
+  journal = {arXiv preprint arXiv:2004.14601},
+  year    = {2020}
 }
 "
 Introduce Test for Inductive Bias via Language Model Transfer (TILT).
@@ -26,10 +26,10 @@ Results:
 "
 
 @article{artetxe2019cross,
-  title={On the cross-lingual transferability of monolingual representations},
-  author={Artetxe, Mikel and Ruder, Sebastian and Yogatama, Dani},
-  journal={arXiv preprint arXiv:1910.11856},
-  year={2019}
+  title   = {On the cross-lingual transferability of monolingual representations},
+  author  = {Artetxe, Mikel and Ruder, Sebastian and Yogatama, Dani},
+  journal = {arXiv preprint arXiv:1910.11856},
+  year    = {2019}
 }
 "
 Models:
@@ -47,10 +47,10 @@ Results:
 "
 
 @article{ri2022pretraining,
-  title={Pretraining with artificial language: Studying transferable knowledge in language models},
-  author={Ri, Ryokan and Tsuruoka, Yoshimasa},
-  journal={arXiv preprint arXiv:2203.10326},
-  year={2022}
+  title   = {Pretraining with artificial language: Studying transferable knowledge in language models},
+  author  = {Ri, Ryokan and Tsuruoka, Yoshimasa},
+  journal = {arXiv preprint arXiv:2203.10326},
+  year    = {2022}
 }
 "
 Models:
@@ -72,12 +72,12 @@ Results:
 "
 
 @misc{papadimitriou2023injecting,
-  title={Injecting structural hints: Using language models to study inductive biases in language learning}, 
-  author={Isabel Papadimitriou and Dan Jurafsky},
-  year={2023},
-  eprint={2304.13060},
-  archivePrefix={arXiv},
-  primaryClass={cs.CL}
+  title         = {Injecting structural hints: Using language models to study inductive biases in language learning},
+  author        = {Isabel Papadimitriou and Dan Jurafsky},
+  year          = {2023},
+  eprint        = {2304.13060},
+  archiveprefix = {arXiv},
+  primaryclass  = {cs.CL}
 }
 "
 https://github.com/toizzy/injecting-structural-hints
@@ -100,11 +100,11 @@ Results:
 "
 
 @article{lu2021pretrained,
-  title={Pretrained transformers as universal computation engines},
-  author={Lu, Kevin and Grover, Aditya and Abbeel, Pieter and Mordatch, Igor},
-  journal={arXiv preprint arXiv:2103.05247},
-  volume={1},
-  year={2021}
+  title   = {Pretrained transformers as universal computation engines},
+  author  = {Lu, Kevin and Grover, Aditya and Abbeel, Pieter and Mordatch, Igor},
+  journal = {arXiv preprint arXiv:2103.05247},
+  volume  = {1},
+  year    = {2021}
 }
 "
 Models:
@@ -134,13 +134,13 @@ Results:
 "
 
 @inproceedings{chiang2022transferability,
-  title={On the transferability of pre-trained language models: A study from artificial datasets},
-  author={Chiang, Cheng-Han and Lee, Hung-yi},
-  booktitle={Proceedings of the AAAI Conference on Artificial Intelligence},
-  volume={36},
-  number={10},
-  pages={10518--10525},
-  year={2022}
+  title     = {On the transferability of pre-trained language models: A study from artificial datasets},
+  author    = {Chiang, Cheng-Han and Lee, Hung-yi},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume    = {36},
+  number    = {10},
+  pages     = {10518--10525},
+  year      = {2022}
 }
 "
 Models:
@@ -166,10 +166,10 @@ Testing tasks:
 
 # Testing 
 @article{kharitonov2020they,
-  title={What they do when in doubt: a study of inductive biases in seq2seq learners},
-  author={Kharitonov, Eugene and Chaabouni, Rahma},
-  journal={arXiv preprint arXiv:2006.14953},
-  year={2020}
+  title   = {What they do when in doubt: a study of inductive biases in seq2seq learners},
+  author  = {Kharitonov, Eugene and Chaabouni, Rahma},
+  journal = {arXiv preprint arXiv:2006.14953},
+  year    = {2020}
 }
 "
 Tasks: 
@@ -182,704 +182,740 @@ Tasks:
 # Interpretability
 
 @article{voita2019analyzing,
-  title={Analyzing multi-head self-attention: Specialized heads do the heavy lifting, the rest can be pruned},
-  author={Voita, Elena and Talbot, David and Moiseev, Fedor and Sennrich, Rico and Titov, Ivan},
-  journal={arXiv preprint arXiv:1905.09418},
-  year={2019}
+  title   = {Analyzing multi-head self-attention: Specialized heads do the heavy lifting, the rest can be pruned},
+  author  = {Voita, Elena and Talbot, David and Moiseev, Fedor and Sennrich, Rico and Titov, Ivan},
+  journal = {arXiv preprint arXiv:1905.09418},
+  year    = {2019}
 }
 "
 Descsribes three types of attention heads: positional, syntactic, rare words. Perhaps rare words is a refined form of averaging, because you don’t want to update much on seeing 'the' or some other common token, their distribution is quite stable.
 "
 
 @article{elhage2021mathematical,
-   title={A Mathematical Framework for Transformer Circuits},
-   author={Elhage, Nelson and Nanda, Neel and Olsson, Catherine and Henighan, Tom and Joseph, Nicholas and Mann, Ben and Askell, Amanda and Bai, Yuntao and Chen, Anna and Conerly, Tom and DasSarma, Nova and Drain, Dawn and Ganguli, Deep and Hatfield-Dodds, Zac and Hernandez, Danny and Jones, Andy and Kernion, Jackson and Lovitt, Liane and Ndousse, Kamal and Amodei, Dario and Brown, Tom and Clark, Jack and Kaplan, Jared and McCandlish, Sam and Olah, Chris},
-   year={2021},
-   journal={Transformer Circuits Thread},
-   note={https://transformer-circuits.pub/2021/framework/index.html}
+  title   = {A Mathematical Framework for Transformer Circuits},
+  author  = {Elhage, Nelson and Nanda, Neel and Olsson, Catherine and Henighan, Tom and Joseph, Nicholas and Mann, Ben and Askell, Amanda and Bai, Yuntao and Chen, Anna and Conerly, Tom and DasSarma, Nova and Drain, Dawn and Ganguli, Deep and Hatfield-Dodds, Zac and Hernandez, Danny and Jones, Andy and Kernion, Jackson and Lovitt, Liane and Ndousse, Kamal and Amodei, Dario and Brown, Tom and Clark, Jack and Kaplan, Jared and McCandlish, Sam and Olah, Chris},
+  year    = {2021},
+  journal = {Transformer Circuits Thread},
+  note    = {https://transformer-circuits.pub/2021/framework/index.html}
 }
 "
 Discusses heads that do averaging from the previous tokens that can be the next one according to corpus-wise bigram statistics. Maybe they are the same as rare words heads, because in cases where the next word is probably rare, such heads will attend to this rare word, and in other cases they will attend more uniformly. Also, they point out that most of the heads in one-layer Transformer are copying.
 "
 
 @inproceedings{orvieto2022anticorrelated,
-  title={Anticorrelated noise injection for improved generalization},
-  author={Orvieto, Antonio and Kersting, Hans and Proske, Frank and Bach, Francis and Lucchi, Aurelien},
-  booktitle={International Conference on Machine Learning},
-  pages={17094--17116},
-  year={2022},
-  organization={PMLR}
+  title        = {Anticorrelated noise injection for improved generalization},
+  author       = {Orvieto, Antonio and Kersting, Hans and Proske, Frank and Bach, Francis and Lucchi, Aurelien},
+  booktitle    = {International Conference on Machine Learning},
+  pages        = {17094--17116},
+  year         = {2022},
+  organization = {PMLR}
 }
 
 @article{bahri2021sharpness,
-  title={Sharpness-aware minimization improves language model generalization},
-  author={Bahri, Dara and Mobahi, Hossein and Tay, Yi},
-  journal={arXiv preprint arXiv:2110.08529},
-  year={2021}
+  title   = {Sharpness-aware minimization improves language model generalization},
+  author  = {Bahri, Dara and Mobahi, Hossein and Tay, Yi},
+  journal = {arXiv preprint arXiv:2110.08529},
+  year    = {2021}
 }
 
 @article{hochreiter1997flat,
-  title={Flat minima},
-  author={Hochreiter, Sepp and Schmidhuber, J{\"u}rgen},
-  journal={Neural computation},
-  volume={9},
-  number={1},
-  pages={1--42},
-  year={1997},
-  publisher={MIT Press One Rogers Street, Cambridge, MA 02142-1209, USA journals-info~…}
+  title     = {Flat minima},
+  author    = {Hochreiter, Sepp and Schmidhuber, J{\"u}rgen},
+  journal   = {Neural computation},
+  volume    = {9},
+  number    = {1},
+  pages     = {1--42},
+  year      = {1997},
+  publisher = {MIT Press One Rogers Street, Cambridge, MA 02142-1209, USA journals-info~…}
 }
 
 @misc{shlegeris2022language,
   author = {Shlegeris, Buck and Roger, Fabien and Chan, Lawrence},
-  title = {Language models seem to be much better than humans at next-token prediction},
-  year = {2022},
-  url = {https://www.alignmentforum.org/posts/htrZrxduciZ5QaCjw/language-models-seem-to-be-much-better-than-humans-at-next}
+  title  = {Language models seem to be much better than humans at next-token prediction},
+  year   = {2022},
+  url    = {https://www.alignmentforum.org/posts/htrZrxduciZ5QaCjw/language-models-seem-to-be-much-better-than-humans-at-next}
 }
 
 @inproceedings{he2015delving,
-  title={Delving deep into rectifiers: Surpassing human-level performance on imagenet classification},
-  author={He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},
-  booktitle={Proceedings of the IEEE international conference on computer vision},
-  pages={1026--1034},
-  year={2015}
+  title     = {Delving deep into rectifiers: Surpassing human-level performance on imagenet classification},
+  author    = {He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},
+  booktitle = {Proceedings of the IEEE international conference on computer vision},
+  pages     = {1026--1034},
+  year      = {2015}
 }
 
 @article{villalobos2022will,
-  title={Will we run out of data? An analysis of the limits of scaling datasets in Machine Learning},
-  author={Villalobos, Pablo and Sevilla, Jaime and Heim, Lennart and Besiroglu, Tamay and Hobbhahn, Marius and Ho, Anson},
-  journal={arXiv preprint arXiv:2211.04325},
-  year={2022}
+  title   = {Will we run out of data? An analysis of the limits of scaling datasets in Machine Learning},
+  author  = {Villalobos, Pablo and Sevilla, Jaime and Heim, Lennart and Besiroglu, Tamay and Hobbhahn, Marius and Ho, Anson},
+  journal = {arXiv preprint arXiv:2211.04325},
+  year    = {2022}
 }
 
 @article{hendrycks2023overview,
-  title={An Overview of Catastrophic AI Risks},
-  author={Hendrycks, Dan and Mazeika, Mantas and Woodside, Thomas},
-  journal={arXiv preprint arXiv:2306.12001},
-  year={2023}
+  title   = {An Overview of Catastrophic AI Risks},
+  author  = {Hendrycks, Dan and Mazeika, Mantas and Woodside, Thomas},
+  journal = {arXiv preprint arXiv:2306.12001},
+  year    = {2023}
 }
 
 % General
 @article{vaswani2017attention,
-  title={Attention is all you need},
-  author={Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and Kaiser, {\L}ukasz and Polosukhin, Illia},
-  journal={Advances in neural information processing systems},
-  volume={30},
-  year={2017}
+  title   = {Attention is all you need},
+  author  = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and Kaiser, {\L}ukasz and Polosukhin, Illia},
+  journal = {Advances in neural information processing systems},
+  volume  = {30},
+  year    = {2017}
 }
 
 @article{hochreiter1997long,
-  title={Long short-term memory},
-  author={Hochreiter, Sepp and Schmidhuber, J{\"u}rgen},
-  journal={Neural computation},
-  volume={9},
-  number={8},
-  pages={1735--1780},
-  year={1997},
-  publisher={MIT press}
+  title     = {Long short-term memory},
+  author    = {Hochreiter, Sepp and Schmidhuber, J{\"u}rgen},
+  journal   = {Neural computation},
+  volume    = {9},
+  number    = {8},
+  pages     = {1735--1780},
+  year      = {1997},
+  publisher = {MIT press}
 }
 
 " Generalization in deep learning "
 
 @article{schmidhuber1997discovering,
-  title={Discovering neural nets with low Kolmogorov complexity and high generalization capability},
-  author={Schmidhuber, J{\"u}rgen},
-  journal={Neural Networks},
-  volume={10},
-  number={5},
-  pages={857--873},
-  year={1997},
-  publisher={Elsevier}
+  title     = {Discovering neural nets with low Kolmogorov complexity and high generalization capability},
+  author    = {Schmidhuber, J{\"u}rgen},
+  journal   = {Neural Networks},
+  volume    = {10},
+  number    = {5},
+  pages     = {857--873},
+  year      = {1997},
+  publisher = {Elsevier}
 }
 
 @article{zhang2021understanding,
-  title={Understanding deep learning (still) requires rethinking generalization},
-  author={Zhang, Chiyuan and Bengio, Samy and Hardt, Moritz and Recht, Benjamin and Vinyals, Oriol},
-  journal={Communications of the ACM},
-  volume={64},
-  number={3},
-  pages={107--115},
-  year={2021},
-  publisher={ACM New York, NY, USA}
+  title     = {Understanding deep learning (still) requires rethinking generalization},
+  author    = {Zhang, Chiyuan and Bengio, Samy and Hardt, Moritz and Recht, Benjamin and Vinyals, Oriol},
+  journal   = {Communications of the ACM},
+  volume    = {64},
+  number    = {3},
+  pages     = {107--115},
+  year      = {2021},
+  publisher = {ACM New York, NY, USA}
 }
 
 @article{bousquet2000algorithmic,
-  title={Algorithmic stability and generalization performance},
-  author={Bousquet, Olivier and Elisseeff, Andr{\'e}},
-  journal={Advances in Neural Information Processing Systems},
-  volume={13},
-  year={2000}
+  title   = {Algorithmic stability and generalization performance},
+  author  = {Bousquet, Olivier and Elisseeff, Andr{\'e}},
+  journal = {Advances in Neural Information Processing Systems},
+  volume  = {13},
+  year    = {2000}
 }
 
 @article{shen2020reservoir,
-  title={Reservoir transformers},
-  author={Shen, Sheng and Baevski, Alexei and Morcos, Ari S and Keutzer, Kurt and Auli, Michael and Kiela, Douwe},
-  journal={arXiv preprint arXiv:2012.15045},
-  year={2020}
+  title   = {Reservoir transformers},
+  author  = {Shen, Sheng and Baevski, Alexei and Morcos, Ari S and Keutzer, Kurt and Auli, Michael and Kiela, Douwe},
+  journal = {arXiv preprint arXiv:2012.15045},
+  year    = {2020}
 }
 
 % precision penalty, also shows that AIT approach explains i.i.d. generalization to large extent
 @inproceedings{arora2018stronger,
-  title={Stronger generalization bounds for deep nets via a compression approach},
-  author={Arora, Sanjeev and Ge, Rong and Neyshabur, Behnam and Zhang, Yi},
-  booktitle={International Conference on Machine Learning},
-  pages={254--263},
-  year={2018},
-  organization={PMLR}
+  title        = {Stronger generalization bounds for deep nets via a compression approach},
+  author       = {Arora, Sanjeev and Ge, Rong and Neyshabur, Behnam and Zhang, Yi},
+  booktitle    = {International Conference on Machine Learning},
+  pages        = {254--263},
+  year         = {2018},
+  organization = {PMLR}
 }
 
 % AIT approach even explains double descent
 @article{lotfi2022pac,
-  title={PAC-bayes compression bounds so tight that they can explain generalization},
-  author={Lotfi, Sanae and Finzi, Marc and Kapoor, Sanyam and Potapczynski, Andres and Goldblum, Micah and Wilson, Andrew G},
-  journal={Advances in Neural Information Processing Systems},
-  volume={35},
-  pages={31459--31473},
-  year={2022}
+  title   = {PAC-bayes compression bounds so tight that they can explain generalization},
+  author  = {Lotfi, Sanae and Finzi, Marc and Kapoor, Sanyam and Potapczynski, Andres and Goldblum, Micah and Wilson, Andrew G},
+  journal = {Advances in Neural Information Processing Systems},
+  volume  = {35},
+  pages   = {31459--31473},
+  year    = {2022}
 }
 
 @article{bengio2009learning,
-  title={Learning deep architectures for AI},
-  author={Bengio, Yoshua and others},
-  journal={Foundations and trends{\textregistered} in Machine Learning},
-  volume={2},
-  number={1},
-  pages={1--127},
-  year={2009},
-  publisher={Now Publishers, Inc.}
+  title     = {Learning deep architectures for AI},
+  author    = {Bengio, Yoshua and others},
+  journal   = {Foundations and trends{\textregistered} in Machine Learning},
+  volume    = {2},
+  number    = {1},
+  pages     = {1--127},
+  year      = {2009},
+  publisher = {Now Publishers, Inc.}
 }
 
 % here was a tight bound for i.i.d. generalization in terms of weight norms
 @article{kawaguchi2017generalization,
-  title={Generalization in deep learning},
-  author={Kawaguchi, Kenji and Kaelbling, Leslie Pack and Bengio, Yoshua},
-  journal={arXiv preprint arXiv:1710.05468},
-  volume={1},
-  number={8},
-  year={2017}
+  title   = {Generalization in deep learning},
+  author  = {Kawaguchi, Kenji and Kaelbling, Leslie Pack and Bengio, Yoshua},
+  journal = {arXiv preprint arXiv:1710.05468},
+  volume  = {1},
+  number  = {8},
+  year    = {2017}
 }
 
 @inproceedings{von2023transformers,
-  title={Transformers learn in-context by gradient descent},
-  author={Von Oswald, Johannes and Niklasson, Eyvind and Randazzo, Ettore and Sacramento, Jo{\~a}o and Mordvintsev, Alexander and Zhmoginov, Andrey and Vladymyrov, Max},
-  booktitle={International Conference on Machine Learning},
-  pages={35151--35174},
-  year={2023},
-  organization={PMLR}
+  title        = {Transformers learn in-context by gradient descent},
+  author       = {Von Oswald, Johannes and Niklasson, Eyvind and Randazzo, Ettore and Sacramento, Jo{\~a}o and Mordvintsev, Alexander and Zhmoginov, Andrey and Vladymyrov, Max},
+  booktitle    = {International Conference on Machine Learning},
+  pages        = {35151--35174},
+  year         = {2023},
+  organization = {PMLR}
 }
 
 @inproceedings{negrea2020defense,
-  title={In defense of uniform convergence: Generalization via derandomization with an application to interpolating predictors},
-  author={Negrea, Jeffrey and Dziugaite, Gintare Karolina and Roy, Daniel},
-  booktitle={International Conference on Machine Learning},
-  pages={7263--7272},
-  year={2020},
-  organization={PMLR}
+  title        = {In defense of uniform convergence: Generalization via derandomization with an application to interpolating predictors},
+  author       = {Negrea, Jeffrey and Dziugaite, Gintare Karolina and Roy, Daniel},
+  booktitle    = {International Conference on Machine Learning},
+  pages        = {7263--7272},
+  year         = {2020},
+  organization = {PMLR}
 }
 
 @article{martin2017rethinking,
-  title={Rethinking generalization requires revisiting old ideas: statistical mechanics approaches and complex learning behavior},
-  author={Martin, Charles H and Mahoney, Michael W},
-  journal={arXiv preprint arXiv:1710.09553},
-  year={2017}
+  title   = {Rethinking generalization requires revisiting old ideas: statistical mechanics approaches and complex learning behavior},
+  author  = {Martin, Charles H and Mahoney, Michael W},
+  journal = {arXiv preprint arXiv:1710.09553},
+  year    = {2017}
 }
 
 @article{chatterjee2022generalization,
-  title={On the generalization mystery in deep learning},
-  author={Chatterjee, Satrajit and Zielinski, Piotr},
-  journal={arXiv preprint arXiv:2203.10036},
-  year={2022}
+  title   = {On the generalization mystery in deep learning},
+  author  = {Chatterjee, Satrajit and Zielinski, Piotr},
+  journal = {arXiv preprint arXiv:2203.10036},
+  year    = {2022}
 }
 
 @article{neyshabur2017exploring,
-  title={Exploring generalization in deep learning},
-  author={Neyshabur, Behnam and Bhojanapalli, Srinadh and McAllester, David and Srebro, Nati},
-  journal={Advances in neural information processing systems},
-  volume={30},
-  year={2017}
+  title   = {Exploring generalization in deep learning},
+  author  = {Neyshabur, Behnam and Bhojanapalli, Srinadh and McAllester, David and Srebro, Nati},
+  journal = {Advances in neural information processing systems},
+  volume  = {30},
+  year    = {2017}
 }
 
 @incollection{vapnik2015uniform,
-  title={On the uniform convergence of relative frequencies of events to their probabilities},
-  author={Vapnik, Vladimir N and Chervonenkis, A Ya},
-  booktitle={Measures of complexity: festschrift for alexey chervonenkis},
-  pages={11--30},
-  year={2015},
-  publisher={Springer}
+  title     = {On the uniform convergence of relative frequencies of events to their probabilities},
+  author    = {Vapnik, Vladimir N and Chervonenkis, A Ya},
+  booktitle = {Measures of complexity: festschrift for alexey chervonenkis},
+  pages     = {11--30},
+  year      = {2015},
+  publisher = {Springer}
 }
 
 @article{he2019local,
-  title={The local elasticity of neural networks},
-  author={He, Hangfeng and Su, Weijie J},
-  journal={arXiv preprint arXiv:1910.06943},
-  year={2019}
+  title   = {The local elasticity of neural networks},
+  author  = {He, Hangfeng and Su, Weijie J},
+  journal = {arXiv preprint arXiv:1910.06943},
+  year    = {2019}
 }
 
 % argument about many input-output maps having a simplicity bias
 @article{dingle2020generic,
-  title={Generic predictions of output probability based on complexities of inputs and outputs},
-  author={Dingle, Kamaludin and P{\'e}rez, Guillermo Valle and Louis, Ard A},
-  journal={Scientific reports},
-  volume={10},
-  number={1},
-  pages={4415},
-  year={2020},
-  publisher={Nature Publishing Group UK London}
+  title     = {Generic predictions of output probability based on complexities of inputs and outputs},
+  author    = {Dingle, Kamaludin and P{\'e}rez, Guillermo Valle and Louis, Ard A},
+  journal   = {Scientific reports},
+  volume    = {10},
+  number    = {1},
+  pages     = {4415},
+  year      = {2020},
+  publisher = {Nature Publishing Group UK London}
 }
 
 @article{wolpert1996lack,
-  title={The lack of a priori distinctions between learning algorithms},
-  author={Wolpert, David H},
-  journal={Neural computation},
-  volume={8},
-  number={7},
-  pages={1341--1390},
-  year={1996},
-  publisher={MIT Press One Rogers Street, Cambridge, MA 02142-1209, USA journals-info~…}
+  title     = {The lack of a priori distinctions between learning algorithms},
+  author    = {Wolpert, David H},
+  journal   = {Neural computation},
+  volume    = {8},
+  number    = {7},
+  pages     = {1341--1390},
+  year      = {1996},
+  publisher = {MIT Press One Rogers Street, Cambridge, MA 02142-1209, USA journals-info~…}
 }
 
 @article{solomonoff2009algorithmic,
-  title={Algorithmic probability: Theory and applications},
-  author={Solomonoff, Ray J},
-  journal={Information theory and statistical learning},
-  pages={1--23},
-  year={2009},
-  publisher={Springer}
+  title     = {Algorithmic probability: Theory and applications},
+  author    = {Solomonoff, Ray J},
+  journal   = {Information theory and statistical learning},
+  pages     = {1--23},
+  year      = {2009},
+  publisher = {Springer}
 }
 
 % refutes NFL theorems, gets rid of data-dependent priors, shows that GPT-3 approximates Kolmogorov complexity in-context (insert plot with GPT models and Solomonoff prior)
 @article{goldblum2023no,
-  title={The No Free Lunch Theorem, Kolmogorov Complexity, and the Role of Inductive Biases in Machine Learning},
-  author={Goldblum, Micah and Finzi, Marc and Rowan, Keefer and Wilson, Andrew Gordon},
-  journal={arXiv preprint arXiv:2304.05366},
-  year={2023}
+  title   = {The No Free Lunch Theorem, Kolmogorov Complexity, and the Role of Inductive Biases in Machine Learning},
+  author  = {Goldblum, Micah and Finzi, Marc and Rowan, Keefer and Wilson, Andrew Gordon},
+  journal = {arXiv preprint arXiv:2304.05366},
+  year    = {2023}
 }
 
 @article{hu2023latent,
-  title={Latent State Models of Training Dynamics},
-  author={Hu, Michael Y and Chen, Angelica and Saphra, Naomi and Cho, Kyunghyun},
-  journal={arXiv preprint arXiv:2308.09543},
-  year={2023}
+  title   = {Latent State Models of Training Dynamics},
+  author  = {Hu, Michael Y and Chen, Angelica and Saphra, Naomi and Cho, Kyunghyun},
+  journal = {arXiv preprint arXiv:2308.09543},
+  year    = {2023}
 }
 
 @article{mandt2017stochastic,
-  title={Stochastic gradient descent as approximate bayesian inference},
-  author={Mandt, Stephan and Hoffman, Matthew D and Blei, David M},
-  journal={arXiv preprint arXiv:1704.04289},
-  year={2017}
+  title   = {Stochastic gradient descent as approximate bayesian inference},
+  author  = {Mandt, Stephan and Hoffman, Matthew D and Blei, David M},
+  journal = {arXiv preprint arXiv:1704.04289},
+  year    = {2017}
 }
 
 @article{frankle2018lottery,
-  title={The lottery ticket hypothesis: Finding sparse, trainable neural networks},
-  author={Frankle, Jonathan and Carbin, Michael},
-  journal={arXiv preprint arXiv:1803.03635},
-  year={2018}
+  title   = {The lottery ticket hypothesis: Finding sparse, trainable neural networks},
+  author  = {Frankle, Jonathan and Carbin, Michael},
+  journal = {arXiv preprint arXiv:1803.03635},
+  year    = {2018}
 }
 
 @article{power2022grokking,
-  title={Grokking: Generalization beyond overfitting on small algorithmic datasets},
-  author={Power, Alethea and Burda, Yuri and Edwards, Harri and Babuschkin, Igor and Misra, Vedant},
-  journal={arXiv preprint arXiv:2201.02177},
-  year={2022}
+  title   = {Grokking: Generalization beyond overfitting on small algorithmic datasets},
+  author  = {Power, Alethea and Burda, Yuri and Edwards, Harri and Babuschkin, Igor and Misra, Vedant},
+  journal = {arXiv preprint arXiv:2201.02177},
+  year    = {2022}
 }
 
 @article{mingard2021sgd,
-  title={Is SGD a Bayesian sampler? Well, almost},
-  author={Mingard, Chris and Valle-P{\'e}rez, Guillermo and Skalse, Joar and Louis, Ard A},
-  journal={The Journal of Machine Learning Research},
-  volume={22},
-  number={1},
-  pages={3579--3642},
-  year={2021},
-  publisher={JMLRORG}
+  title     = {Is SGD a Bayesian sampler? Well, almost},
+  author    = {Mingard, Chris and Valle-P{\'e}rez, Guillermo and Skalse, Joar and Louis, Ard A},
+  journal   = {The Journal of Machine Learning Research},
+  volume    = {22},
+  number    = {1},
+  pages     = {3579--3642},
+  year      = {2021},
+  publisher = {JMLRORG}
 }
 
 @inproceedings{chiang2022loss,
-  title={Loss landscapes are all you need: Neural network generalization can be explained without the implicit bias of gradient descent},
-  author={Chiang, Ping-yeh and Ni, Renkun and Miller, David Yu and Bansal, Arpit and Geiping, Jonas and Goldblum, Micah and Goldstein, Tom},
-  booktitle={The Eleventh International Conference on Learning Representations},
-  year={2022}
+  title     = {Loss landscapes are all you need: Neural network generalization can be explained without the implicit bias of gradient descent},
+  author    = {Chiang, Ping-yeh and Ni, Renkun and Miller, David Yu and Bansal, Arpit and Geiping, Jonas and Goldblum, Micah and Goldstein, Tom},
+  booktitle = {The Eleventh International Conference on Learning Representations},
+  year      = {2022}
 }
 
 @inproceedings{hinton1986learning,
-  title={Learning distributed representations of concepts},
-  author={Hinton, Geoffrey E and others},
-  booktitle={Proceedings of the eighth annual conference of the cognitive science society},
-  volume={1},
-  pages={12},
-  year={1986},
-  organization={Amherst, MA}
+  title        = {Learning distributed representations of concepts},
+  author       = {Hinton, Geoffrey E and others},
+  booktitle    = {Proceedings of the eighth annual conference of the cognitive science society},
+  volume       = {1},
+  pages        = {12},
+  year         = {1986},
+  organization = {Amherst, MA}
 }
 
 @inproceedings{eldan2016power,
-  title={The power of depth for feedforward neural networks},
-  author={Eldan, Ronen and Shamir, Ohad},
-  booktitle={Conference on learning theory},
-  pages={907--940},
-  year={2016},
-  organization={PMLR}
+  title        = {The power of depth for feedforward neural networks},
+  author       = {Eldan, Ronen and Shamir, Ohad},
+  booktitle    = {Conference on learning theory},
+  pages        = {907--940},
+  year         = {2016},
+  organization = {PMLR}
 }
 
 @inproceedings{gallicchio2020deep,
-  title={Deep randomized neural networks},
-  author={Gallicchio, Claudio and Scardapane, Simone},
-  booktitle={Recent Trends in Learning From Data: Tutorials from the INNS Big Data and Deep Learning Conference (INNSBDDL2019)},
-  pages={43--68},
-  year={2020},
-  organization={Springer}
+  title        = {Deep randomized neural networks},
+  author       = {Gallicchio, Claudio and Scardapane, Simone},
+  booktitle    = {Recent Trends in Learning From Data: Tutorials from the INNS Big Data and Deep Learning Conference (INNSBDDL2019)},
+  pages        = {43--68},
+  year         = {2020},
+  organization = {Springer}
 }
 
 @article{cover1965geometrical,
-  title={Geometrical and statistical properties of systems of linear inequalities with applications in pattern recognition},
-  author={Cover, Thomas M},
-  journal={IEEE transactions on electronic computers},
-  number={3},
-  pages={326--334},
-  year={1965},
-  publisher={IEEE}
+  title     = {Geometrical and statistical properties of systems of linear inequalities with applications in pattern recognition},
+  author    = {Cover, Thomas M},
+  journal   = {IEEE transactions on electronic computers},
+  number    = {3},
+  pages     = {326--334},
+  year      = {1965},
+  publisher = {IEEE}
 }
 
 @article{bartlett1996valid,
-  title={For valid generalization the size of the weights is more important than the size of the network},
-  author={Bartlett, Peter},
-  journal={Advances in neural information processing systems},
-  volume={9},
-  year={1996}
+  title   = {For valid generalization the size of the weights is more important than the size of the network},
+  author  = {Bartlett, Peter},
+  journal = {Advances in neural information processing systems},
+  volume  = {9},
+  year    = {1996}
 }
 
 @article{blumer1987occam,
-  title={Occam's razor},
-  author={Blumer, Anselm and Ehrenfeucht, Andrzej and Haussler, David and Warmuth, Manfred K},
-  journal={Information processing letters},
-  volume={24},
-  number={6},
-  pages={377--380},
-  year={1987},
-  publisher={Elsevier}
+  title     = {Occam's razor},
+  author    = {Blumer, Anselm and Ehrenfeucht, Andrzej and Haussler, David and Warmuth, Manfred K},
+  journal   = {Information processing letters},
+  volume    = {24},
+  number    = {6},
+  pages     = {377--380},
+  year      = {1987},
+  publisher = {Elsevier}
 }
 
 @article{wei2019data,
-  title={Data-dependent sample complexity of deep neural networks via lipschitz augmentation},
-  author={Wei, Colin and Ma, Tengyu},
-  journal={Advances in Neural Information Processing Systems},
-  volume={32},
-  year={2019}
+  title   = {Data-dependent sample complexity of deep neural networks via lipschitz augmentation},
+  author  = {Wei, Colin and Ma, Tengyu},
+  journal = {Advances in Neural Information Processing Systems},
+  volume  = {32},
+  year    = {2019}
 }
 
 @article{barak2022hidden,
-  title={Hidden progress in deep learning: Sgd learns parities near the computational limit},
-  author={Barak, Boaz and Edelman, Benjamin and Goel, Surbhi and Kakade, Sham and Malach, Eran and Zhang, Cyril},
-  journal={Advances in Neural Information Processing Systems},
-  volume={35},
-  pages={21750--21764},
-  year={2022}
+  title   = {Hidden progress in deep learning: Sgd learns parities near the computational limit},
+  author  = {Barak, Boaz and Edelman, Benjamin and Goel, Surbhi and Kakade, Sham and Malach, Eran and Zhang, Cyril},
+  journal = {Advances in Neural Information Processing Systems},
+  volume  = {35},
+  pages   = {21750--21764},
+  year    = {2022}
 }
 
 " Role of pre-training "
 
 @article{chowers2023cnns,
-  title={What do CNNs Learn in the First Layer and Why? A Linear Systems Perspective},
-  author={Chowers, Rhea and Weiss, Yair},
-  year={2023}
+  title  = {What do CNNs Learn in the First Layer and Why? A Linear Systems Perspective},
+  author = {Chowers, Rhea and Weiss, Yair},
+  year   = {2023}
 }
 
 @article{krishna2021does,
-  title={Does pretraining for summarization require knowledge transfer?},
-  author={Krishna, Kundan and Bigham, Jeffrey and Lipton, Zachary C},
-  journal={arXiv preprint arXiv:2109.04953},
-  year={2021}
+  title   = {Does pretraining for summarization require knowledge transfer?},
+  author  = {Krishna, Kundan and Bigham, Jeffrey and Lipton, Zachary C},
+  journal = {arXiv preprint arXiv:2109.04953},
+  year    = {2021}
 }
 
 @article{mehta2021empirical,
-  title={An empirical investigation of the role of pre-training in lifelong learning},
-  author={Mehta, Sanket Vaibhav and Patil, Darshan and Chandar, Sarath and Strubell, Emma},
-  journal={arXiv preprint arXiv:2112.09153},
-  year={2021}
+  title   = {An empirical investigation of the role of pre-training in lifelong learning},
+  author  = {Mehta, Sanket Vaibhav and Patil, Darshan and Chandar, Sarath and Strubell, Emma},
+  journal = {arXiv preprint arXiv:2112.09153},
+  year    = {2021}
 }
 
 @article{han2021pre,
-  title={Pre-trained models: Past, present and future},
-  author={Han, Xu and Zhang, Zhengyan and Ding, Ning and Gu, Yuxian and Liu, Xiao and Huo, Yuqi and Qiu, Jiezhong and Yao, Yuan and Zhang, Ao and Zhang, Liang and others},
-  journal={AI Open},
-  volume={2},
-  pages={225--250},
-  year={2021},
-  publisher={Elsevier}
+  title     = {Pre-trained models: Past, present and future},
+  author    = {Han, Xu and Zhang, Zhengyan and Ding, Ning and Gu, Yuxian and Liu, Xiao and Huo, Yuqi and Qiu, Jiezhong and Yao, Yuan and Zhang, Ao and Zhang, Liang and others},
+  journal   = {AI Open},
+  volume    = {2},
+  pages     = {225--250},
+  year      = {2021},
+  publisher = {Elsevier}
 }
 
 @article{radford2019language,
-  title={Language models are unsupervised multitask learners},
-  author={Radford, Alec and Wu, Jeffrey and Child, Rewon and Luan, David and Amodei, Dario and Sutskever, Ilya and others},
-  journal={OpenAI blog},
-  volume={1},
-  number={8},
-  pages={9},
-  year={2019}
+  title   = {Language models are unsupervised multitask learners},
+  author  = {Radford, Alec and Wu, Jeffrey and Child, Rewon and Luan, David and Amodei, Dario and Sutskever, Ilya and others},
+  journal = {OpenAI blog},
+  volume  = {1},
+  number  = {8},
+  pages   = {9},
+  year    = {2019}
 }
 
 @article{sinha2021masked,
-  title={Masked language modeling and the distributional hypothesis: Order word matters pre-training for little},
-  author={Sinha, Koustuv and Jia, Robin and Hupkes, Dieuwke and Pineau, Joelle and Williams, Adina and Kiela, Douwe},
-  journal={arXiv preprint arXiv:2104.06644},
-  year={2021}
+  title   = {Masked language modeling and the distributional hypothesis: Order word matters pre-training for little},
+  author  = {Sinha, Koustuv and Jia, Robin and Hupkes, Dieuwke and Pineau, Joelle and Williams, Adina and Kiela, Douwe},
+  journal = {arXiv preprint arXiv:2104.06644},
+  year    = {2021}
 }
 
 @article{maennel2020neural,
-  title={What do neural networks learn when trained with random labels?},
-  author={Maennel, Hartmut and Alabdulmohsin, Ibrahim M and Tolstikhin, Ilya O and Baldock, Robert and Bousquet, Olivier and Gelly, Sylvain and Keysers, Daniel},
-  journal={Advances in Neural Information Processing Systems},
-  volume={33},
-  pages={19693--19704},
-  year={2020}
+  title   = {What do neural networks learn when trained with random labels?},
+  author  = {Maennel, Hartmut and Alabdulmohsin, Ibrahim M and Tolstikhin, Ilya O and Baldock, Robert and Bousquet, Olivier and Gelly, Sylvain and Keysers, Daniel},
+  journal = {Advances in Neural Information Processing Systems},
+  volume  = {33},
+  pages   = {19693--19704},
+  year    = {2020}
 }
 
 @article{neyshabur2020being,
-  title={What is being transferred in transfer learning?},
-  author={Neyshabur, Behnam and Sedghi, Hanie and Zhang, Chiyuan},
-  journal={Advances in neural information processing systems},
-  volume={33},
-  pages={512--523},
-  year={2020}
+  title   = {What is being transferred in transfer learning?},
+  author  = {Neyshabur, Behnam and Sedghi, Hanie and Zhang, Chiyuan},
+  journal = {Advances in neural information processing systems},
+  volume  = {33},
+  pages   = {512--523},
+  year    = {2020}
 }
 
 " World models "
 
 @article{gurnee2023language,
-  title={Language Models Represent Space and Time}, 
-  author={Wes Gurnee and Max Tegmark},
-  journal={arXiv preprint arXiv:2310.02207},
-  volume={1},
-  year={2023},
+  title   = {Language Models Represent Space and Time},
+  author  = {Wes Gurnee and Max Tegmark},
+  journal = {arXiv preprint arXiv:2310.02207},
+  volume  = {1},
+  year    = {2023}
 }
 
 @article{chan2022data,
-  title={Data distributional properties drive emergent in-context learning in transformers},
-  author={Chan, Stephanie and Santoro, Adam and Lampinen, Andrew and Wang, Jane and Singh, Aaditya and Richemond, Pierre and McClelland, James and Hill, Felix},
-  journal={Advances in Neural Information Processing Systems},
-  volume={35},
-  pages={18878--18891},
-  year={2022}
+  title   = {Data distributional properties drive emergent in-context learning in transformers},
+  author  = {Chan, Stephanie and Santoro, Adam and Lampinen, Andrew and Wang, Jane and Singh, Aaditya and Richemond, Pierre and McClelland, James and Hill, Felix},
+  journal = {Advances in Neural Information Processing Systems},
+  volume  = {35},
+  pages   = {18878--18891},
+  year    = {2022}
 }
 
 @article{li2022emergent,
-  title={Emergent world representations: Exploring a sequence model trained on a synthetic task},
-  author={Li, Kenneth and Hopkins, Aspen K and Bau, David and Vi{\'e}gas, Fernanda and Pfister, Hanspeter and Wattenberg, Martin},
-  journal={arXiv preprint arXiv:2210.13382},
-  year={2022}
+  title   = {Emergent world representations: Exploring a sequence model trained on a synthetic task},
+  author  = {Li, Kenneth and Hopkins, Aspen K and Bau, David and Vi{\'e}gas, Fernanda and Pfister, Hanspeter and Wattenberg, Martin},
+  journal = {arXiv preprint arXiv:2210.13382},
+  year    = {2022}
 }
 
 @misc{nanda2023othello,
   author = {Nanda, Neel},
-  title = {Actually, Othello-GPT Has A Linear Emergent World Representation},
-  year = {2023},
-  url = {https://www.neelnanda.io/mechanistic-interpretability/othello}
+  title  = {Actually, Othello-GPT Has A Linear Emergent World Representation},
+  year   = {2023},
+  url    = {https://www.neelnanda.io/mechanistic-interpretability/othello}
 }
 
 @article{turner2023activation,
-  title={Activation Addition: Steering Language Models Without Optimization},
-  author={Turner, Alex and Thiergart, Lisa and Udell, David and Leech, Gavin and Mini, Ulisse and MacDiarmid, Monte},
-  journal={arXiv preprint arXiv:2308.10248},
-  year={2023}
+  title   = {Activation Addition: Steering Language Models Without Optimization},
+  author  = {Turner, Alex and Thiergart, Lisa and Udell, David and Leech, Gavin and Mini, Ulisse and MacDiarmid, Monte},
+  journal = {arXiv preprint arXiv:2308.10248},
+  year    = {2023}
 }
 
 @article{mikolov2013efficient,
-  title={Efficient estimation of word representations in vector space},
-  author={Mikolov, Tomas and Chen, Kai and Corrado, Greg and Dean, Jeffrey},
-  journal={arXiv preprint arXiv:1301.3781},
-  year={2013}
+  title   = {Efficient estimation of word representations in vector space},
+  author  = {Mikolov, Tomas and Chen, Kai and Corrado, Greg and Dean, Jeffrey},
+  journal = {arXiv preprint arXiv:1301.3781},
+  year    = {2013}
 }
 
 @article{jin2023evidence,
-  title={Evidence of Meaning in Language Models Trained on Programs},
-  author={Jin, Charles and Rinard, Martin},
-  journal={arXiv preprint arXiv:2305.11169},
-  year={2023}
+  title   = {Evidence of Meaning in Language Models Trained on Programs},
+  author  = {Jin, Charles and Rinard, Martin},
+  journal = {arXiv preprint arXiv:2305.11169},
+  year    = {2023}
 }
 
 
 " High-quality data "
 @article{eldan2023tinystories,
-  title={TinyStories: How Small Can Language Models Be and Still Speak Coherent English?},
-  author={Eldan, Ronen and Li, Yuanzhi},
-  journal={arXiv preprint arXiv:2305.07759},
-  year={2023}
+  title   = {TinyStories: How Small Can Language Models Be and Still Speak Coherent English?},
+  author  = {Eldan, Ronen and Li, Yuanzhi},
+  journal = {arXiv preprint arXiv:2305.07759},
+  year    = {2023}
 }
 
 @article{gunasekar2023textbooks,
-  title={Textbooks Are All You Need},
-  author={Gunasekar, Suriya and Zhang, Yi and Aneja, Jyoti and Mendes, Caio C{\'e}sar Teodoro and Del Giorno, Allie and Gopi, Sivakanth and Javaheripi, Mojan and Kauffmann, Piero and de Rosa, Gustavo and Saarikivi, Olli and others},
-  journal={arXiv preprint arXiv:2306.11644},
-  year={2023}
+  title   = {Textbooks Are All You Need},
+  author  = {Gunasekar, Suriya and Zhang, Yi and Aneja, Jyoti and Mendes, Caio C{\'e}sar Teodoro and Del Giorno, Allie and Gopi, Sivakanth and Javaheripi, Mojan and Kauffmann, Piero and de Rosa, Gustavo and Saarikivi, Olli and others},
+  journal = {arXiv preprint arXiv:2306.11644},
+  year    = {2023}
 }
 
 @article{li2023textbooks,
-  title={Textbooks are all you need ii: phi-1.5 technical report},
-  author={Li, Yuanzhi and Bubeck, S{\'e}bastien and Eldan, Ronen and Del Giorno, Allie and Gunasekar, Suriya and Lee, Yin Tat},
-  journal={arXiv preprint arXiv:2309.05463},
-  year={2023}
+  title   = {Textbooks are all you need ii: phi-1.5 technical report},
+  author  = {Li, Yuanzhi and Bubeck, S{\'e}bastien and Eldan, Ronen and Del Giorno, Allie and Gunasekar, Suriya and Lee, Yin Tat},
+  journal = {arXiv preprint arXiv:2309.05463},
+  year    = {2023}
 }
 
 " Evidence of simplicity bias "
 @article{de2018deep,
-  title={Deep neural networks are biased towards simple functions},
-  author={De Palma, Giacomo and Kiani, Bobak Toussi and Lloyd, Seth},
-  journal={arXiv},
-  volume={2018},
-  year={2018}
+  title   = {Deep neural networks are biased towards simple functions},
+  author  = {De Palma, Giacomo and Kiani, Bobak Toussi and Lloyd, Seth},
+  journal = {arXiv},
+  volume  = {2018},
+  year    = {2018}
 }
 @article{valle2018deep,
-  title={Deep learning generalizes because the parameter-function map is biased towards simple functions},
-  author={Valle-Perez, Guillermo and Camargo, Chico Q and Louis, Ard A},
-  journal={arXiv preprint arXiv:1805.08522},
-  year={2018}
+  title   = {Deep learning generalizes because the parameter-function map is biased towards simple functions},
+  author  = {Valle-Perez, Guillermo and Camargo, Chico Q and Louis, Ard A},
+  journal = {arXiv preprint arXiv:1805.08522},
+  year    = {2018}
 }
 @article{mingard2019neural,
-  title={Neural networks are a priori biased towards boolean functions with low entropy},
-  author={Mingard, Chris and Skalse, Joar and Valle-P{\'e}rez, Guillermo and Mart{\'\i}nez-Rubio, David and Mikulik, Vladimir and Louis, Ard A},
-  journal={arXiv preprint arXiv:1909.11522},
-  year={2019}
+  title   = {Neural networks are a priori biased towards boolean functions with low entropy},
+  author  = {Mingard, Chris and Skalse, Joar and Valle-P{\'e}rez, Guillermo and Mart{\'\i}nez-Rubio, David and Mikulik, Vladimir and Louis, Ard A},
+  journal = {arXiv preprint arXiv:1909.11522},
+  year    = {2019}
 }
 @article{kalimeris2019sgd,
-  title={Sgd on neural networks learns functions of increasing complexity},
-  author={Kalimeris, Dimitris and Kaplun, Gal and Nakkiran, Preetum and Edelman, Benjamin and Yang, Tristan and Barak, Boaz and Zhang, Haofeng},
-  journal={Advances in neural information processing systems},
-  volume={32},
-  year={2019}
+  title   = {Sgd on neural networks learns functions of increasing complexity},
+  author  = {Kalimeris, Dimitris and Kaplun, Gal and Nakkiran, Preetum and Edelman, Benjamin and Yang, Tristan and Barak, Boaz and Zhang, Haofeng},
+  journal = {Advances in neural information processing systems},
+  volume  = {32},
+  year    = {2019}
 }
 
 " Avoiding simple solutions "
 @article{he2019unlearn,
-  title={Unlearn dataset bias in natural language inference by fitting the residual},
-  author={He, He and Zha, Sheng and Wang, Haohan},
-  journal={arXiv preprint arXiv:1908.10763},
-  year={2019}
+  title   = {Unlearn dataset bias in natural language inference by fitting the residual},
+  author  = {He, He and Zha, Sheng and Wang, Haohan},
+  journal = {arXiv preprint arXiv:1908.10763},
+  year    = {2019}
 }
 
 @article{clark2019don,
-  title={Don't take the easy way out: Ensemble based methods for avoiding known dataset biases},
-  author={Clark, Christopher and Yatskar, Mark and Zettlemoyer, Luke},
-  journal={arXiv preprint arXiv:1909.03683},
-  year={2019}
+  title   = {Don't take the easy way out: Ensemble based methods for avoiding known dataset biases},
+  author  = {Clark, Christopher and Yatskar, Mark and Zettlemoyer, Luke},
+  journal = {arXiv preprint arXiv:1909.03683},
+  year    = {2019}
 }
 
 @article{clark2020learning,
-  title={Learning to model and ignore dataset bias with mixed capacity ensembles},
-  author={Clark, Christopher and Yatskar, Mark and Zettlemoyer, Luke},
-  journal={arXiv preprint arXiv:2011.03856},
-  year={2020}
+  title   = {Learning to model and ignore dataset bias with mixed capacity ensembles},
+  author  = {Clark, Christopher and Yatskar, Mark and Zettlemoyer, Luke},
+  journal = {arXiv preprint arXiv:2011.03856},
+  year    = {2020}
 }
 
 @article{nam2020learning,
-  title={Learning from failure: De-biasing classifier from biased classifier},
-  author={Nam, Junhyun and Cha, Hyuntak and Ahn, Sungsoo and Lee, Jaeho and Shin, Jinwoo},
-  journal={Advances in Neural Information Processing Systems},
-  volume={33},
-  pages={20673--20684},
-  year={2020}
+  title   = {Learning from failure: De-biasing classifier from biased classifier},
+  author  = {Nam, Junhyun and Cha, Hyuntak and Ahn, Sungsoo and Lee, Jaeho and Shin, Jinwoo},
+  journal = {Advances in Neural Information Processing Systems},
+  volume  = {33},
+  pages   = {20673--20684},
+  year    = {2020}
 }
 
 @article{malkin2021coherence,
-  title={Coherence boosting: When your pretrained language model is not paying enough attention},
-  author={Malkin, Nikolay and Wang, Zhen and Jojic, Nebojsa},
-  journal={arXiv preprint arXiv:2110.08294},
-  year={2021}
+  title   = {Coherence boosting: When your pretrained language model is not paying enough attention},
+  author  = {Malkin, Nikolay and Wang, Zhen and Jojic, Nebojsa},
+  journal = {arXiv preprint arXiv:2110.08294},
+  year    = {2021}
 }
 
 @article{chuang2023dola,
-  title={DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models},
-  author={Chuang, Yung-Sung and Xie, Yujia and Luo, Hongyin and Kim, Yoon and Glass, James and He, Pengcheng},
-  journal={arXiv preprint arXiv:2309.03883},
-  year={2023}
+  title   = {DoLa: Decoding by Contrasting Layers Improves Factuality in Large Language Models},
+  author  = {Chuang, Yung-Sung and Xie, Yujia and Luo, Hongyin and Kim, Yoon and Glass, James and He, Pengcheng},
+  journal = {arXiv preprint arXiv:2309.03883},
+  year    = {2023}
 }
 
 " Data-driven inductive bias "
 
 @article{dosovitskiy2020image,
-  title={An image is worth 16x16 words: Transformers for image recognition at scale},
-  author={Dosovitskiy, Alexey and Beyer, Lucas and Kolesnikov, Alexander and Weissenborn, Dirk and Zhai, Xiaohua and Unterthiner, Thomas and Dehghani, Mostafa and Minderer, Matthias and Heigold, Georg and Gelly, Sylvain and others},
-  journal={arXiv preprint arXiv:2010.11929},
-  year={2020}
+  title   = {An image is worth 16x16 words: Transformers for image recognition at scale},
+  author  = {Dosovitskiy, Alexey and Beyer, Lucas and Kolesnikov, Alexander and Weissenborn, Dirk and Zhai, Xiaohua and Unterthiner, Thomas and Dehghani, Mostafa and Minderer, Matthias and Heigold, Georg and Gelly, Sylvain and others},
+  journal = {arXiv preprint arXiv:2010.11929},
+  year    = {2020}
 }
 
 @article{lindemann2023injecting,
-  title={Injecting a Structural Inductive Bias into a Seq2Seq Model by Simulation},
-  author={Lindemann, Matthias and Koller, Alexander and Titov, Ivan},
-  journal={arXiv preprint arXiv:2310.00796},
-  year={2023}
+  title   = {Injecting a Structural Inductive Bias into a Seq2Seq Model by Simulation},
+  author  = {Lindemann, Matthias and Koller, Alexander and Titov, Ivan},
+  journal = {arXiv preprint arXiv:2310.00796},
+  year    = {2023}
 }
 
 @article{chen2023learning,
-  title={Learning Language Representations with Logical Inductive Bias},
-  author={Chen, Jianshu},
-  journal={arXiv preprint arXiv:2302.09458},
-  year={2023}
+  title   = {Learning Language Representations with Logical Inductive Bias},
+  author  = {Chen, Jianshu},
+  journal = {arXiv preprint arXiv:2302.09458},
+  year    = {2023}
 }
 
 @article{min2021metaicl,
-  title={MetaICL: Learning to Learn In Context},
-  author={Min, Sewon and Lewis, Mike and Zettlemoyer, Luke and Hajishirzi, Hannaneh},
-  journal={arXiv preprint arXiv:2110.15943},
-  year={2021}
+  title   = {MetaICL: Learning to Learn In Context},
+  author  = {Min, Sewon and Lewis, Mike and Zettlemoyer, Luke and Hajishirzi, Hannaneh},
+  journal = {arXiv preprint arXiv:2110.15943},
+  year    = {2021}
 }
 
 @inproceedings{wu2021lime,
-  title={LIME: Learning Inductive Bias for Primitives of Mathematical Reasoning},
-  author={Wu, Yuhuai and Rabe, Markus N and Li, Wenda and Ba, Jimmy and Grosse, Roger B and Szegedy, Christian},
-  booktitle={International Conference on Machine Learning},
-  pages={11251--11262},
-  year={2021},
-  organization={PMLR}
+  title        = {LIME: Learning Inductive Bias for Primitives of Mathematical Reasoning},
+  author       = {Wu, Yuhuai and Rabe, Markus N and Li, Wenda and Ba, Jimmy and Grosse, Roger B and Szegedy, Christian},
+  booktitle    = {International Conference on Machine Learning},
+  pages        = {11251--11262},
+  year         = {2021},
+  organization = {PMLR}
 }
 
 @article{mukherjee2023orca,
-  title={Orca: Progressive learning from complex explanation traces of gpt-4},
-  author={Mukherjee, Subhabrata and Mitra, Arindam and Jawahar, Ganesh and Agarwal, Sahaj and Palangi, Hamid and Awadallah, Ahmed},
-  journal={arXiv preprint arXiv:2306.02707},
-  year={2023}
+  title   = {Orca: Progressive learning from complex explanation traces of gpt-4},
+  author  = {Mukherjee, Subhabrata and Mitra, Arindam and Jawahar, Ganesh and Agarwal, Sahaj and Palangi, Hamid and Awadallah, Ahmed},
+  journal = {arXiv preprint arXiv:2306.02707},
+  year    = {2023}
 }
 
 @article{mitra2023orca,
-  title={Orca 2: Teaching Small Language Models How to Reason},
-  author={Mitra, Arindam and Del Corro, Luciano and Mahajan, Shweti and Codas, Andres and Simoes, Clarisse and Agrawal, Sahaj and Chen, Xuxi and Razdaibiedina, Anastasia and Jones, Erik and Aggarwal, Kriti and others},
-  journal={arXiv preprint arXiv:2311.11045},
-  year={2023}
+  title   = {Orca 2: Teaching Small Language Models How to Reason},
+  author  = {Mitra, Arindam and Del Corro, Luciano and Mahajan, Shweti and Codas, Andres and Simoes, Clarisse and Agrawal, Sahaj and Chen, Xuxi and Razdaibiedina, Anastasia and Jones, Erik and Aggarwal, Kriti and others},
+  journal = {arXiv preprint arXiv:2311.11045},
+  year    = {2023}
 }
 
 @article{warstadt2020can,
-  title={Can neural networks acquire a structural bias from raw linguistic data?},
-  author={Warstadt, Alex and Bowman, Samuel R},
-  journal={arXiv preprint arXiv:2007.06761},
-  year={2020}
+  title   = {Can neural networks acquire a structural bias from raw linguistic data?},
+  author  = {Warstadt, Alex and Bowman, Samuel R},
+  journal = {arXiv preprint arXiv:2007.06761},
+  year    = {2020}
 }
 
 @article{mccoy2020universal,
-  title={Universal linguistic inductive biases via meta-learning},
-  author={McCoy, R Thomas and Grant, Erin and Smolensky, Paul and Griffiths, Thomas L and Linzen, Tal},
-  journal={arXiv preprint arXiv:2006.16324},
-  year={2020}
+  title   = {Universal linguistic inductive biases via meta-learning},
+  author  = {McCoy, R Thomas and Grant, Erin and Smolensky, Paul and Griffiths, Thomas L and Linzen, Tal},
+  journal = {arXiv preprint arXiv:2006.16324},
+  year    = {2020}
 }
 
 @inproceedings{finn2017model,
-  title={Model-agnostic meta-learning for fast adaptation of deep networks},
-  author={Finn, Chelsea and Abbeel, Pieter and Levine, Sergey},
-  booktitle={International conference on machine learning},
-  pages={1126--1135},
-  year={2017},
-  organization={PMLR}
+  title        = {Model-agnostic meta-learning for fast adaptation of deep networks},
+  author       = {Finn, Chelsea and Abbeel, Pieter and Levine, Sergey},
+  booktitle    = {International conference on machine learning},
+  pages        = {1126--1135},
+  year         = {2017},
+  organization = {PMLR}
 }
 
 @inproceedings{touvron2021training,
-  title={Training data-efficient image transformers \& distillation through attention},
-  author={Touvron, Hugo and Cord, Matthieu and Douze, Matthijs and Massa, Francisco and Sablayrolles, Alexandre and J{\'e}gou, Herv{\'e}},
-  booktitle={International conference on machine learning},
-  pages={10347--10357},
-  year={2021},
-  organization={PMLR}
+  title        = {Training data-efficient image transformers \& distillation through attention},
+  author       = {Touvron, Hugo and Cord, Matthieu and Douze, Matthijs and Massa, Francisco and Sablayrolles, Alexandre and J{\'e}gou, Herv{\'e}},
+  booktitle    = {International conference on machine learning},
+  pages        = {10347--10357},
+  year         = {2021},
+  organization = {PMLR}
 }
 
 @inproceedings{ren2022co,
-  title={Co-advise: Cross inductive bias distillation},
-  author={Ren, Sucheng and Gao, Zhengqi and Hua, Tianyu and Xue, Zihui and Tian, Yonglong and He, Shengfeng and Zhao, Hang},
-  booktitle={Proceedings of the IEEE/CVF Conference on computer vision and pattern recognition},
-  pages={16773--16782},
-  year={2022}
+  title     = {Co-advise: Cross inductive bias distillation},
+  author    = {Ren, Sucheng and Gao, Zhengqi and Hua, Tianyu and Xue, Zihui and Tian, Yonglong and He, Shengfeng and Zhao, Hang},
+  booktitle = {Proceedings of the IEEE/CVF Conference on computer vision and pattern recognition},
+  pages     = {16773--16782},
+  year      = {2022}
+}
+
+" Structure of language "
+@article{chomsky1956three,
+  title     = {Three models for the description of language},
+  author    = {Chomsky, Noam},
+  journal   = {IRE Transactions on information theory},
+  volume    = {2},
+  number    = {3},
+  pages     = {113--124},
+  year      = {1956},
+  publisher = {IEEE}
+}
+
+" Benchmarks "
+@article{wang2018glue,
+  title   = {GLUE: A multi-task benchmark and analysis platform for natural language understanding},
+  author  = {Wang, Alex and Singh, Amanpreet and Michael, Julian and Hill, Felix and Levy, Omer and Bowman, Samuel R},
+  journal = {arXiv preprint arXiv:1804.07461},
+  year    = {2018}
+}
+
+@article{hendrycks2020measuring,
+  title   = {Measuring massive multitask language understanding},
+  author  = {Hendrycks, Dan and Burns, Collin and Basart, Steven and Zou, Andy and Mazeika, Mantas and Song, Dawn and Steinhardt, Jacob},
+  journal = {arXiv preprint arXiv:2009.03300},
+  year    = {2020}
+}
+
+@misc{openai2023gpt4,
+  title         = {GPT-4 Technical Report},
+  author        = {OpenAI},
+  year          = {2023},
+  eprint        = {2303.08774},
+  archiveprefix = {arXiv},
+  primaryclass  = {cs.CL}
 }

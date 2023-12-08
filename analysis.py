@@ -8,7 +8,6 @@ from torch import Tensor as TT
 from jaxtyping import Float, Int
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from utils import explore
 
 
 %load_ext autoreload
@@ -36,7 +35,7 @@ from_flat_tun = get_model("Mlxa/tuned-flat-english")
 from_shuffle_emb = get_model("Mlxa/embeddings-flat_shuffle-english")
 from_shuffle_tun = get_model("Mlxa/tuned-flat_shuffle-english")
 
-# %%
+# %% [markdown]
 # ### Word-level information
 
 # %%
@@ -119,24 +118,17 @@ def analyze(name, n_vectors: int = 5, n_clusters: int = 10):
 # %%
 def analyze_probe(name):
     from utils import mixed_probe
-    import json
-    results = mixed_probe(emb_dict[name], features.drop(columns=["id", "token"]))
-    print(json.dumps(results, indent=2))
+    return mixed_probe(emb_dict[name], features.drop(columns=["id", "token"]))
 
 # %%
-analyze_probe("scratch")
-
-# %%
-analyze_probe("nested")
-
-# %%
-analyze_probe("flat")
-
-# %%
-analyze_probe("shuffle")
+import json
+names = ["scratch", "nested", "flat", "shuffle"]
+results = { name : analyze_probe(name) for name in names }
+print(json.dumps(results, indent=2))
 
 # %%
 from utils import cloze_test
+from tqdm import tqdm
 import json
 
 with open("cloze_tasks.json") as f:
@@ -146,23 +138,23 @@ def analyze_cloze(model):
     results = {}
     for task_name, prompts in tasks.items():
         results[task_name] = cloze_test(model, tokenizer, prompts).mean().item()
-    print(json.dumps(results, indent=2))
+    return results
 
 # %%
-analyze_cloze(big)
-
-# %%
-print("Nested")
-analyze_cloze(from_nested_tun)
-analyze_cloze(from_nested_emb)
-
-print("Flat")
-analyze_cloze(from_flat_tun)
-analyze_cloze(from_flat_emb)
-
-print("Shuffle")
-analyze_cloze(from_shuffle_tun)
-analyze_cloze(from_shuffle_emb)
+models_dict = {
+    "nested ELT": from_nested_tun,
+    "nested E": from_nested_emb,
+    "flat ELT": from_flat_tun,
+    "flat E": from_flat_emb,
+    "shuffle ELT": from_shuffle_tun,
+    "shuffle E": from_shuffle_emb,
+    "scratch 8M": from_scratch,
+    "scratch 33M": big,
+}
+results = {}
+for name, model in tqdm(models_dict.items()):
+    results[name] = analyze_cloze(model)
+print(json.dumps(results, indent=2))
 
 # %% [markdown]
 # TODO:

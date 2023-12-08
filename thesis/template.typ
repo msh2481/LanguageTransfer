@@ -65,7 +65,8 @@
         left: 118pt,
         right: 119pt,
         bottom: 96pt,
-      )
+      ),
+    numbering: "1"
   )
 
    // Configure headings.
