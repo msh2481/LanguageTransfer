@@ -21,4 +21,4 @@ prefix_sums = t.cumsum(weighted_embeddings, dim=0)
 top_distribution = t.softmax(prefix_sums @ type_embedding_matrix.T, dim=-1)
 
 plt.imshow(top_distribution)
-plt.show()
+plt.savefig("img/mech.svg")

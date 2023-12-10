@@ -310,8 +310,8 @@ In the table below there are the results of fine-tuning in both directions on ce
 #let finetuning = csv("finetuning.csv")
 #set text(size: 7pt)
 
-#table(
-    columns: (60pt, 60pt) + (auto,) * 8,
+#align(center)[#table(
+    columns: (60pt, 60pt) + (23pt,) * 8,
     fill: (col, _) => if (col < 2 or col == 5 or col == 9) { luma(240) } else { white },
     align: center,
     stroke: 0.3pt,
@@ -321,11 +321,73 @@ In the table below there are the results of fine-tuning in both directions on ce
 [flat_shuffle],[english],[2.42],[2.30],[2.00],[1.19],[2.77],[2.62],[*2.11*],[2.00],
 [nested],[english],[2.82],[2.65],[2.37],[1.19],[3.83],[*3.46*],[*3.32*],[3.32],
 [flat],[english],[2.74],[2.56],[2.35],[1.19],[4.28],[4.16],[*3.76*],[3.78],
-)
+)]
 
 #set text(size: small-size)
 The first two rows show that `flat` is more complex than `nested` and `flat_shuffle` is more complex than `flat`, in a sense of being more general, because fine-tuning in the direction `flat_shuffle` #sym.arrow `flat` #sym.arrow `nested` achieves good performance simply by replacing the embeddings.
 The remaining measurements showo that English is more complex than all synthetic languages used here, but it is also quite different, as the models needs more flexibility to adapt from English to e.g. `flat` and `flat_shuffle`.
+
+=== Mechanistic interpretation
+As discussed before, `nested` is a context-free language while `flat` is context-dependent. However, the fact that they lie in different classes does not explain, for example, why the second one leads to better structured embedding space. So, to have a better chance of understanding the complexity of language and its structure, reasoning in terms of abstract classes of languages and other high-level generalizations is not enough, and one should understand the actual algorithm implemented by the language model trained on it.
+
+My first step in this investigation was to check the importance of different layers on the end result. The model considered was the one trained on `nested`, because it is both simple and very structured language, so it is easy to detect whether the model works or not. I took the average loss on several prompts as a metric and then tried zeroing out every parameter tensor in the model one at a time, comparing their impact on the performance. The result was that the most impactful layers are the first and the last one, and also embeddings and unembeddings, but the middle ones still had a nontrivial impact. In other words, I wasn't able to reduce the model to a simpler one.
+
+As a less agressive technique, I tried replacing each layer by its low-rank approximation. Again, the middle layers were the easiest to compress, rank $4$ (out of $d_"model" = 256$) approximation of layers $2 - 5$ still recovered most of the performance. But even for rank $4$ matrices it is not trivial to understand what algorithm is implemented by them, so this approach was not very productive as well.
+
+Then I tested the model on prompts like `<1 <2 <3 ... <n n> ... >3 >2 >1` and looked for the maximum $n$ for which the next token has the highest predicted probability at every position with a closing bracket. I found that the maximum $n$ was $16$, which combined with the fact that the model has $8$ layers allows to reject the hypothesis that each layer increases maximum nesting depth by $1$. At the same time, the model clearly had not learnt the general algorithm, otherwise it would work for any $n$, or at least much larger ones.
+
+These observations inspired me to think about algorithms that use arithmetic in vector spaces to approximate a stack. In particular, I made the following algorithm, which predicts the token on top of the stack in a vectorized fashion: 
+
+```python
+import torch as t
+
+n_types = 16
+dim = 16
+factor = 2.0
+
+type_embedding_matrix = t.randn((n_types, dim))
+type_embedding_matrix /= type_embedding_matrix.norm(dim=1, keepdim=True)
+
+n_pairs = 16
+is_open = t.tensor([1] * n_pairs + [0] * n_pairs)
+bracket_type = t.tensor(list(range(n_pairs)) + list(range(n_pairs - 1, -1, -1)))
+
+elevation = t.cumsum(2 * is_open - 1, dim=0) - is_open
+weight = t.pow(factor, elevation)
+signed_weight = (2 * is_open - 1) * weight
+type_embeddings = type_embedding_matrix[bracket_type]
+weighted_embeddings = signed_weight.unsqueeze(-1) * type_embeddings
+prefix_sums = t.cumsum(weighted_embeddings, dim=0)
+top_distribution = t.softmax(prefix_sums @ type_embedding_matrix.T, dim=-1)
+```
+
+The idea is that each type of bracket has a direction associated with it, and stack is a single vector, for which the distribution of the possible element "on top of the stack" is given by dot products with the type directions. To put something on top, I just add the corresponding direction with large enough weight so that it dominates everything that was accumulated in the stack before. And to pop from the stack, I subtract the same direction.
+
+The algorithm produces accurate preditions, putting most of the probability mass into the correct token:
+
+#align(center)[#image("../img/mech.svg", height: 250pt)]
+
+Checking whether the language model indeed works in this way remains an open question, however it seems plausible that it implements at least an approximation of this, e.g. exponentiation is a hard operation for a language model so it might instead learn a piecewise-linear function to approximate $2^x$. 
+
+Note that the algorithm can be trivially extended to `flat` language, by removing the exponentiation part --- now the "stack" is simply a sum of the embeddings of tokens in it. This finally provides a possible explanation of the structure of the embedding space. For `nested`, the only important property is that each vector has higher dot product with itself than with other vectors, because the embedding of the last open bracket will have more weight than all other tokens in the stack and so they will not interfere with eah other. But for `flat` the model needs access not only to the top of the stack, but to all the tokens in it, which means that arbitrary linear combination of the embeddings should be uniquely decodable. This requires the embeddings to be orthogonal. 
+
+For all four models I measured whether their embedding vectors have the same, or close, norm, and whether they are close to orthogonal. The results are shown in the table below. Covariance means the average dot product of two different embedding vectors, and variance means the average squared norm of an embedding vector.
+
+#align(center)[
+#table(
+    columns: (60pt,) + (40pt,) * 4,
+    align: (left,) + (center,) * 4,
+    stroke: 0.3pt,
+
+[],[*nested*],[*flat*],[*shuffle*],[*scratch*],
+[norm mean],[3.60],[3.70],[4.05],[0.79],
+[norm std],[1.31],[1.13],[1.23],[0.29],
+[covariance],[0.65],[0.19],[0.06],[0.16],
+[variance],[14.68],[14.97],[17.94],[0.72],
+)]
+
+The ratio of the covariance to the variance is $4$ times smaller for `flat` and even smaller for `shuffle`, which supports the explanation above.
+
 
 == Word-level information
 There are non-trivial performance gains in all language pairs from simply tuning the embeddings, so in this section I am going to analyze the structure of the embedding space and what information about words can be extracted from the embeddings.
@@ -367,8 +429,8 @@ I added a feature indicating the frequency of the token in the training corpus, 
 For each of the models and each of the features I trained a ridge regression (for frequency) or a logistic regression (for all other variables, as they are boolean) on $80%$ of the embeddings and then evaluated their $R^2$ score or ROC-AUC on the remaining $20%$.
 
 
-#table(
-    columns: (60pt,) + (auto,) * 4,
+#align(center)[#table(
+    columns: (60pt,) + (40pt,) * 4,
     fill: (col, row) => if (col == 0 or row == 0) { luma(255) } else { white },
     align: (left,) + (center,) * 4,
     stroke: 0.3pt,
@@ -388,7 +450,7 @@ For each of the models and each of the features I trained a ridge regression (fo
 [`pos_tag_VBG`],[0.71],[0.70],[0.73],[0.89],
 [`pos_tag_VBN`],[0.72],[0.68],[0.72],[0.87],
 [*Average*],[0.70],[0.68],[0.68],[0.84],
-)
+)]
 
 All probes in for all models perform better than random, so every model learns at least something related to this features. The embeddings of the model trained on English from scratch predictably outperformed the others, but the quality of other embeddings turned out to be on average the same. Perhpaps the difference in effective dimension between the models is used not for this relatively simple single word features, but for word meanings, sentence structure and so on.
 
@@ -426,8 +488,8 @@ An example from the temporal understanding subtask:
 For each of the synthetic languages I used two models, one where only the fine-tunings were adapted to English (E) and another with all three stages (ELT). I compared them to the model of the same architecture trained on English from scratch, and also to a four times bigger model trained on English from scratch to see which metrics can be improved.
 #pagebreak()
 
-#table(
-    columns: (90pt,) + (auto,) * 8,
+#align(center)[#table(
+    columns: (90pt,) + (33pt,) * 8,
     fill: (col, row) => if (col == 0 or row == 0) { luma(255) } else { white },
     align: (left,) + (center,) * 8,
     stroke: 0.3pt,
@@ -445,7 +507,7 @@ For each of the synthetic languages I used two models, one where only the fine-t
 [#text(`narrative understanding`, 7pt)],[-0.04],[-0.07],[0.07],[0.03],[0.04],[0.04],[0.17],[0.27],
 [#text(`ethics`, 7pt)],[0.17],[0.32],[0.22],[0.34],[0.30],[0.27],[0.25],[0.51],
 [*Average*],[0.16],[0.15],[0.22],[0.16],[0.23],[0.14],[0.44],[0.58],
-)
+)]
 
 In terms of general trends there are two interesting observations. First, models with all three stages of fine-tuning are better, predictably, than their counterparts having only the embeddings tuned, but this difference is more pronounced in `flat` and `flat_shuffle`. The question why is it so remain open for the future work. Second, a familiar pattern appears again, `nested` < `flat` < `flat_shuffle` < `scratch`, which proves the superiority of the introduced `flat_shuffle` dataset.
 
