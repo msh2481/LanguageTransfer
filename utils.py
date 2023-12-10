@@ -309,3 +309,21 @@ def cloze_test(
         loss_incorrect = evaluate_cloze(model, tokenizer, prompt, incorrect)
         results.append(loss_incorrect - loss_correct)
     return t.tensor(results)
+
+
+@typed
+def dependencies_del(
+    model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, seq: str
+) -> Float[TT, "seq seq"]:
+    tokens_list: list[int] = tokenizer(seq)["input_ids"]
+    results = t.zeros((len(tokens_list), len(tokens_list)))
+    original = get_logprobs(model, tokenizer, seq)
+
+    with t.no_grad():
+        for i in range(len(tokens_list)):
+            without: list[int] = tokens_list[:i] + tokens_list[i + 1 :]
+            lp_for_id = get_logprobs(model, tokenizer, without)
+            for j in range(len(tokens_list) - 1):
+                results[i, j + (j >= i)] = original[j + (j >= i)] - lp_for_id[j]
+
+    return t.triu(results)
