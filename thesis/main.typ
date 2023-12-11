@@ -8,12 +8,11 @@
       email: "mbudnikov@constructor.university",
     ),
   ),
-  abstract: [
-    Large Language Models are becoming increasingly capable and useful, but one of the bottlenecks is the amount of data required to train a model for a certain task, because the more data is used the more compute is need, and moreover, if the current scaling trends continue, soon there will not be enough high-quality data for even bigger models @villalobos2022will.      At the same time, recent research shows @eldan2023tinystories @gunasekar2023textbooks that data efficiency can be vastly improved by using datasets tailored for better learning. Still, the high-level mechanisms of learning in LLMs remain poorly understood, as exemplified by suprising findings that pre-training a model on a simple algorithmic task can lead to improvements in language modelling @papadimitriou2020learning. Thus, better understanding of the mechanisms of transfer learning is an important open question.
+  abstract: [ 
+    
+Large Language Models are becoming increasingly capable and useful, but one of the bottlenecks is the amount of data required to train a model for a certain task, because the more data is used the more compute is need, and moreover, if the current scaling trends continue, soon there will not be enough high-quality data for even bigger models @villalobos2022will. At the same time, recent research shows @eldan2023tinystories @gunasekar2023textbooks that data efficiency can be vastly improved by using datasets tailored for better learning. Still, the high-level mechanisms of learning in LLMs remain poorly understood, as exemplified by suprising findings that pre-training a model on a simple algorithmic task can lead to improvements in language modelling @papadimitriou2020learning. Thus, better understanding of the mechanisms of transfer learning is an important open question.
 
-    In this work I focus on several algorithmic datasets and transfer learning from them to English, and try several approaches to analyze them deeper.
-
-    #note[Write about the results.]
+In this work I focus on several algorithmic datasets and transfer learning from them to English, and employ diverse array of tehniques to analyze them deeper. In particular, I analyze the structure of the space of fine-tuned embeddings and the information contained in them and propose a plausible hypothesis regarding the algorithm implemented by the model internally. Also a new natural language understanding benchmark for tiny models is proposed and used to evaluate the capabilities of the fine-tuned models on a diverse set of tasks.
   ],
   bibliography-file: "refs.bib",
 )
@@ -23,22 +22,25 @@
 #pagebreak()
 
 = Introduction
-#note[
-- a lot of money is spent on pretraining large language models, we are running out of data
-    - draw a history of ML, from deep learning to LLMs, cite @villalobos2022will
-- recently there were several results indicating that high-quality datasets can help to reduce the model size preserving the performance
-    - mention TinyStories and Textbooks Are All You Need
-    - mention instruction tuning
-- also lots of ongoing research about what exactly transfers during transfer learning, which is important to construct better datasets
-    - training on shuffled words still leads to improvements
-    - training on bracket sequences also works
-- the task is difficult and in many works only the values of metrics, such as the perplexity, are reported, without a deeper qualitative analysis
-    - show the main plot from @papadimitriou2020learning
-- in this work I focus on several algorithmic datasets and transfer learning from them to English, and try to get deeper insights about the process
-    - hierarchy of languages, introducing new language
-    - when we fine-tune only embeddings, do they have a similar structure for the new language?
-    - when limited in size, what models learn about English after pre-training on a certain synthetic task: word-level knowledge, word relations, sentence structure?
-]
+
+The deep learning revolution in general and Transformer @vaswani2017attention architecture in partular led to the current situation where scaling language models is a reliable way of improving their performance. Although it is good to have scalable learning algorithms, this implies that the state-of-the-art models will always push the limits of available compute and data, which heavily concentrates the opportunities for meaningful researh in the hands of big tech companies with large compute clusters. Moreover, as a thourough analysis in @villalobos2022will shows, the amount of data, espeially high-quality text data, is limited and is going to become the main bottleneck in the following decades. 
+
+Such circumstances motivate research into more data-effective learning algorithms and better understanding of the mechanisms of generalization and transfer learning. Humans are an obvious baseline here, because despite consuming orders of magnitude less data than the modern frontier models, they show non-trivial performance across many domains and even manage to outperform the machines in some of them despite all the recent algorithmic advances. Inspired by this, #cite(<huebner2021babyberta>, form: "prose") demonstrate that training RoBERTa @liu2019roberta on language acquisition data, together with some tweaks to model architecture and training, leads to 6000$times$ gains in data efficiency. In a similar vein, #cite(<eldan2023tinystories>, form: "prose") achieve significant model compression while retaining the ability to produce fluent and coherent English by using a generated dataset of children stories with smaller vocabulary. And #cite(<gunasekar2023textbooks>, form: "prose") find that filtering for data with higher educational value or creating such data is also very helpful.
+
+So there is a growing body of evidence that the choice of data matters a lot and simply scraping the data from the web is suboptimal. However, there is a limited understanding of what properties of the data are important in different training stages. It is well illustrated by a series of findings challenging the common assumptions about the role of data in pre-training. 
+
+#cite(<papadimitriou2020learning>, form: "prose") show that pre-training LSTM @hochreiter1997long on structured but not linguistic data, such as MIDI music, Java code, or even nested parentheses, reduces its perplexity when testing on Spanish. It also works in the opposite direction, #cite(<lu2021pretrained>, form: "prose") get performance on different modalities comparable to training from scratch by fine-tuning only the input and output embeddings of the pre-trained GPT-2 @radford2019language. #cite(<sinha2021masked>, form: "prose") find that removing all information about word order from the pre-training phase does not affect the final performance very much, given a fine-tuning phase with the correct word order. #cite(<krishna2021does>, form: "prose") sample the training data from a completely artificial language, which consists of random n-grams, and observe that pre-training objectives that require processing this information somehow, such as copying sentences in the right order, still improve performance of the model on summarization tasks compared to randomly initialized version. #cite(<maennel2020neural>, form: "prose") run training with entirely random labels and find that in some cases it still helps for further fine-tuning.
+
+However, research in this direction is currently mostly concentrated on reporting surprising observations rather than providing explanations for them and building a general theory. For example, below is the main figure from @papadimitriou2020learning, and that paper is entirely devoted to discussing the differences in perplexity after pre-training on different languages.
+#image("../img/tilt.png")
+
+While making such observations is, without doublt, and important step, more data-efficiency advances can be expected if the cause of these observations is better understood. Therefore, this work attempts to make a small step in that direction and introduces more techniques that can be used to study the mechanisms of transfer learning.
+
+First, as can be seen on the diagram above, different pre-training datasets, even if they are all not related to the target task, lead to different final performance. It suggests an idea that some languages are intrinsically more complex, or perhaps more similar to the target language. To better understand the structure of the language space I introduce a new synthethic language by combining ideas from the previous work and use it  as well as two already existing synthethic datasets to pre-train the models. Then I fine-tune them to English using three different levels of fine-tuning and observe how the performance depends on the language and the allowed flexibility of fine-tuning. From theoretical side, I provide an algorithm which might be used by the models trained on this datasets and discuss the implications for the difficulty of these languages and their effect on model parameters during pre-training.
+
+Second, as one of the settings for transfer learning involves fine-tuning only embeddings, they are the natural target for investigation. I explore the structure of the learned embeddings, namely, the spectrum of their singular values which is a way to understand the effective dimensionality of the data, and the performance of KMeans clustering on them with different number of clusters which is a way to check how uniformly the embeddings are distributed. To check what information is contained in the embeddings I train linear probes to predict certain features of the words given their embeddings. Linear probes are a popular interpretability technique, but to the best of my knowledge they have not been used in this context, i.e. to study the embeddings of models pre-trained on different datasets and fine-tuned to the same task.
+
+Finally, I evaluate the performance of these models in natural language understanding. As existing NLU datasets such as GLUE @wang2018glue and MMLU @hendrycks2020measuring are designed for more capable models, I use GPT-4 @openai2023gpt4 to generate a simplar benchmark consisting of 12 diverse subtasks. 
 
 
 = Background and motivation
@@ -56,15 +58,6 @@ Machine learning algorithms are designed to learn from data, but it is not alway
 
 == Irrelevant data
 One way to understand pre-training on language models is that we transfer some linguistic knowledge from a task wich lots of data available to a downstream task @han2021pre. As it turns out, there are many non-obvious effects of pre-training as well.
-
-@papadimitriou2020learning show that pre-training LSTM @hochreiter1997long on structured but not linguistic data, such as MIDI music, Java code, or even nested parentheses, reduces its perplexity when testing on Spanish. It also works in the opposite direction, @lu2021pretrained get performance on different modalities comparable to training from scratch by fine-tuning only the input and output embeddings of the pre-trained GPT-2 @radford2019language. 
-
-@sinha2021masked find that removing all information about word order from the pre-training phase does not affect the final performance very much, given a fine-tuning phase with the correct word order. 
-
-@krishna2021does sample the training data from a completely artificial language, which consists of random n-grams, and observe that pre-training objectives that require processing this information somehow, such as copying sentences in the right order, still improve performance of the model on summarization tasks compared to randomly initialized version.
-
-@maennel2020neural run training with entirely random labels and find that in some cases it still helps for further fine-tuning. Tracing the roots of this effect they find that the first layer of the network adapts to the data. More precisely, consider the weights from the inputs to a randomly selected neuron in the first hidden layer as a random variable, then during pre-training the eigenvectors of its covariance matrix align with the eigenvectors of covariance matrix of the data. @chowers2023cnns further show that the first layer converges to the whitening transformation for the training dataset.
-
 There is evidence that pre-training leads optimization to a flat basin of the loss landscape. @mehta2021empirical confirm it and suggest as the reason why pre-trained models are more less susceptible to catastrophic forgetting during fine-tuning.  @neyshabur2020being also observe it and also show that models fine-tuned from the same checkpoint stay in the same basin.
 
 == Internal representations
