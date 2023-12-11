@@ -320,7 +320,7 @@ In the table below there are the results of fine-tuning in both directions on ce
 The first two rows show that `flat` is more complex than `nested` and `flat_shuffle` is more complex than `flat`, in a sense of being more general, because fine-tuning in the direction `flat_shuffle` #sym.arrow `flat` #sym.arrow `nested` achieves good performance simply by replacing the embeddings.
 The remaining measurements showo that English is more complex than all synthetic languages used here, but it is also quite different, as the models needs more flexibility to adapt from English to e.g. `flat` and `flat_shuffle`.
 
-=== Mechanistic interpretation
+=== Mechanistic interpretability
 As discussed before, `nested` is a context-free language while `flat` is context-dependent. However, the fact that they lie in different classes does not explain, for example, why the second one leads to better structured embedding space. So, to have a better chance of understanding the complexity of language and its structure, reasoning in terms of abstract classes of languages and other high-level generalizations is not enough, and one should understand the actual algorithm implemented by the language model trained on it.
 
 My first step in this investigation was to check the importance of different layers on the end result. The model considered was the one trained on `nested`, because it is both simple and very structured language, so it is easy to detect whether the model works or not. I took the average loss on several prompts as a metric and then tried zeroing out every parameter tensor in the model one at a time, comparing their impact on the performance. The result was that the most impactful layers are the first and the last one, and also embeddings and unembeddings, but the middle ones still had a nontrivial impact. In other words, I wasn't able to reduce the model to a simpler one.
@@ -334,7 +334,8 @@ These observations inspired me to think about algorithms that use arithmetic in 
 ```python
 import torch as t
 
-n_types = 16
+t.manual_seed(0)
+n_types = 24
 dim = 16
 factor = 2.0
 
@@ -342,8 +343,13 @@ type_embedding_matrix = t.randn((n_types, dim))
 type_embedding_matrix /= type_embedding_matrix.norm(dim=1, keepdim=True)
 
 n_pairs = 16
-is_open = t.tensor([1] * n_pairs + [0] * n_pairs)
-bracket_type = t.tensor(list(range(n_pairs)) + list(range(n_pairs - 1, -1, -1)))
+is_open = t.tensor([1] * n_pairs + [0] * n_pairs + [1] * n_pairs + [0] * n_pairs)
+bracket_type = t.tensor(
+    list(range(n_pairs))
+    + list(range(n_pairs - 1, -1, -1))
+    + list(range(n_pairs))
+    + list(range(n_pairs - 1, -1, -1))
+)
 
 elevation = t.cumsum(2 * is_open - 1, dim=0) - is_open
 weight = t.pow(factor, elevation)
@@ -351,7 +357,9 @@ signed_weight = (2 * is_open - 1) * weight
 type_embeddings = type_embedding_matrix[bracket_type]
 weighted_embeddings = signed_weight.unsqueeze(-1) * type_embeddings
 prefix_sums = t.cumsum(weighted_embeddings, dim=0)
-top_distribution = t.softmax(prefix_sums @ type_embedding_matrix.T, dim=-1)
+denominator = t.pow(factor, -(elevation + is_open))
+normalized = prefix_sums * denominator.unsqueeze(-1)
+logits = normalized @ type_embedding_matrix.T
 ```
 
 The idea is that each type of bracket has a direction associated with it, and stack is a single vector, for which the distribution of the possible element "on top of the stack" is given by dot products with the type directions. To put something on top, I just add the corresponding direction with large enough weight so that it dominates everything that was accumulated in the stack before. And to pop from the stack, I subtract the same direction.
@@ -360,7 +368,9 @@ The algorithm produces accurate preditions, putting most of the probability mass
 
 #align(center)[#image("../img/mech.svg", height: 250pt)]
 
-Checking whether the language model indeed works in this way remains an open question, however it seems plausible that it implements at least an approximation of this, e.g. exponentiation is a hard operation for a language model so it might instead learn a piecewise-linear function to approximate $2^x$. 
+Checking in what way what the language model actually does corresponds to this algorithm remains an open question, however it seems plausible that it implements at least an approximation of this, e.g. exponentiation is a hard operation for a language model so it might instead learn a piecewise-linear function to approximate $2^x$. There is evidence that the model does not exactly this, as the similar plot of log-probabilities of predictions from the model looks different, especially the fist half:
+
+#align(center)[#image("../img/observed.svg", height: 250pt)]
 
 Note that the algorithm can be trivially extended to `flat` language, by removing the exponentiation part --- now the "stack" is simply a sum of the embeddings of tokens in it. This finally provides a possible explanation of the structure of the embedding space. For `nested`, the only important property is that each vector has higher dot product with itself than with other vectors, because the embedding of the last open bracket will have more weight than all other tokens in the stack and so they will not interfere with eah other. But for `flat` the model needs access not only to the top of the stack, but to all the tokens in it, which means that arbitrary linear combination of the embeddings should be uniquely decodable. This requires the embeddings to be orthogonal. 
 
