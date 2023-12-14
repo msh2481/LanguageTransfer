@@ -171,6 +171,19 @@ def get_loss(
 
 
 @typed
+def get_losses(
+    model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, prompt: str
+) -> Float[TT, "seq"]:
+    """
+    Remember, that the first element in the losses tensor is meaningless.
+    """
+    logprobs: Float[TT, "seq vocab"] = get_logprobs(model, tokenizer, prompt)
+    ids: Int[TT, "seq"] = tokenize(tokenizer, prompt)["input_ids"][0]
+    losses: Float[TT, "seq"] = logprobs_to_losses(logprobs, ids)
+    return losses
+
+
+@typed
 def explore(
     model: PreTrainedModel,
     tokenizer: PreTrainedTokenizerBase,

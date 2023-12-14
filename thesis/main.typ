@@ -45,7 +45,6 @@ Finally, I evaluate the performance of these models in natural language understa
 
 = Background and motivation
 
-#note[Rewrite these parts]
 
 == Role of pre-training
 One way to understand pre-training of language models is that we transfer some linguistic knowledge from a task wich lots of data available to a downstream task @han2021pre. But recent findings suggest that it is not the only relevant effect, and sometimes even not the most important one.
@@ -70,50 +69,22 @@ Another surprising finding is that language models tend to learn linear represen
  #cite(<turner2023activation>, form: "prose") found that same trick works for GPT-2 activations. #cite(<nanda2023othello>, form: "prose") showed that Othello-GPT actually has linear world model, in @jin2023evidence the representations are linear as well.
 
 
-== High-quality data
-Current state-of-the-art language models are trained on vast amounts of text, which makes training them very expensive and soon can even become a bottleneck because the amount of data we have is finite. Regarding the topic of this study, an important question is what kind of data and how much of it is needed for the model to obtain certain capabilities, such as producing coherent English or zero-shot reasoning. In other words, how to construct the dataset to make the generalization easier.
+== Educational value of data
 
-@eldan2023tinystories show that by training on stories with very limited vocabulary it is possible to get a model with less than 10 million parameters which is still able to generate consistent and grammatically correct stories. 
+As discussed in the introduction, right choice of pre-training data can greatly increase the ration of performance metrics to training costs. Here I describe the related works in more details.
 
-@gunasekar2023textbooks extend this line of work towards programming domain and show that by carefully selecting data with the most educational value it is possible to significantly reduce the size of language models for code. @li2023textbooks check this for commonsense reasoning and also observe large gains. 
+#cite(<huebner2021babyberta>, form: "prose") noted the discrepancy between the large amount of data used to train RoBERTa @liu2019roberta and the amount of data a typical child consumes by the time they acquire a basic understanding of language grammar. To train BabyBERTa they used language acquisition data, i.e. the kind of data which is available to children, and avoided having the model predict unmasked tokens, as it was doine in RoBERTa. As the result, the model achieved comparable grammatical knowledge with $15times$ less parameters and $6000times$ less words.
 
-== Learning inductive bias from data
+#cite(<eldan2023tinystories>, form: "prose") had a similar setting, but with GPT-style instead of BERT-style model, and using generated dataset of stories for children instead of recordings of casual speech directed to children. They produced a series of TinyStories models with parameter count ranging from 1M to 33M, and even the smallest model is capable of generating mostly coherent and grammatically correct English stories, although with limited vocabulary and knowledge about the world. I use their 8M model for all my experiments, as it is expressive enough to learn all the tasks used and at the same time is very affordable to train.
 
-A useful inductive bias can be instilled into the model by pre-training on data that demonstrates it. @mccoy2020universal use pre-training on natural languages with certain properties by model-agnostic meta-learning @finn2017model to find which biases are needed to quickly acquire these languages. @wu2021lime design synthetic datasets requiring deduction, induction and abduction and pre-train on them to extract inductive bias for general mathematical reasoning. @lindemann2023injecting pre-train models to simulate finite state transducers given their description and achieve better generalization in NLP tasks with similar structure.
+#cite(<gunasekar2023textbooks>, form: "prose") and #cite(<li2023textbooks>, form: "prose") scale this up to 1.3B models and to new domains. In the first part they find and generate textbook quality data to teach programming skills to the model, and the resulting model outperforms much larger ones, up to 16B parameters. In the second part they focus on natural language reasoning and generate synthethic lessons on diverse range of topics related to world knowledge and common sense. Again, it leads to significant reduction in model size, as their 1.3B model outperforms 7B models on multi-step reasoning benchmarks and matches them on language understanding.
 
-@mukherjee2023orca introduce a form of knowledge distillation suitable for language models, where a smaller model is trained on the explanations produced by a bigger one. Such rich training data helps to get better performance from smaller models, which implies boost in generalization. It can also be seen as transferring a superior inductive bias from the teacher model to the student.
-#note[Add @mitra2023orca.]
+== Data-driven inductive bias
 
+Past data alone is almost never enough to predict unseen data, as doing so requires some assumptions about how they are related. Such assumptions are called inductive bias. For example, under assumption that the observed samples are generated as the ground truth plus some independent noise, we will predict that the future samples will be similar to the average. But the same data might lead us to entirely different predictions if we assume that the values tend to grow exponentially over time, with an unknown growth rate.
+The term inductive bias refers to such set of assumptions and describes in which way the model tends to generalize.
 
-#note[Use proper format for citet-style citations]
-
-
-== Properties of a trained model related to generalization
-
-One setting for study of generalization is the i.i.d. case --- train and test samples are from the same distribution and independent, which allows to quantify generalization and provide lower bounds for it. Many properties are found to be be provide such lower bounds, though most of them are describing model complexity in some way:
--  Compressibility: @arora2018stronger, @lotfi2022pac
--  Weight norm: @bartlett1996valid, @wei2019data, @kawaguchi2017generalization
--  Flatness: @hochreiter1997flat, @bahri2021sharpness, @orvieto2022anticorrelated
--  Algorithmic stability: @chatterjee2022generalization, @bousquet2000algorithmic
-
-Whenever a model is used on data on the real-world data, there almost always will be a distribution shift, training data can be completely representative of the actual distribution of inputs only in the simplest cases. So a more useful, though harder to measure, setting is out-of-distribution generalization. As formalized by @wolpert1996lack in no free lunch theorems, without additional assumptions about the problems, all learning algorithms are equally bad, and even such widespread technique as cross-validation will lose to anti-cross-validation in half of the cases. 
-
-If one at least assumes that simple hypotheses should be preferred to complex ones, it is already enough to derive a general method for inductive inference, Solomonoff induction @solomonoff2009algorithmic. By averaging predictions of all possible models weighted by their Kolmogorov complexity it makes only a finite number of errors while predicting any computable sequence. @goldblum2023no points out that most real-world data sources indeed have such simplicity bias, or in other words, can be compressed, compared to the uniform distribution suggested by no free lunch theorems. An interesting observation is that modern deep learning models, including large language models, both trained and randomly initialized, also tend to show a preference for simple solutions @goldblum2023no, @valle2018deep.
-
-== Avoiding too simple solutions <too_good>
-
-One of the inductive biases is simplicity, also known as Occam's razor, meaning that for two features with equal predictive power the simpler one will be learned. Many works had shown that deep neural networks have it in some form, at least when trained with gradient descent @valle2018deep, @valle2018deep, @mingard2019neural. While in many cases it can be helpful to prevent overfitting, often there is also an obvious lower bound for the complexity of generalizable solution. In such cases it is desirable to exclude overly simple solutions, as they are likely to use spurious correlations from training data and fail on test data.
-
-A possible way to deal with it is by training a smaller capacity model and the main model as an ensemble, so that the smaller model captures mostly the superficial patterns and the bigger learns the features that generalize better @clark2020learning. Also, as the superficial features tend to be learned first, one can train a biased model by giving increasingly more weight to the examples that it gets right, and train the main, unbiased model on the harder one @nam2020learning.
-
-The notion of simplicity can be tailored for specific architectures or tasks. For language modeling an important property of a model is to capture long-distance dependencies. @malkin2021coherence increase the effective context length of a language model by subtracting output logits of short-context model from the main model outputs. @chuang2023dola focus on the differences between layers in a deep model. They note that outputs from the last layers tend to be more factually correct, and by selecting one of the earlier layers for contrasting, it is possible to improve the factuality even further. Namely, they select the layer which has the largest Jensen-Shannon divergence of next-word distributions with the final layer, and then subtract their logits.
-
-== Controlling a known bias
-Similar to methods for reducing simplicity bias, any known bias can be avoided by first training a separate model to capture features and patterns related to it, and then using its residuals to train the main model @he2019unlearn, or training the main model in an ensemble with the biased one @clark2019don.
-
-Vision Transformers @dosovitskiy2020image achieved better data-efficiency  by training them to predict not only the correct answer, but also the answer given by a convolutional network @touvron2021training. Using two different teacher architectures brings even more benefits @ren2022co.
-
-Of course, to be able to induce a certain inductive bias the model being pretrained has to be flexible enough to learn it, For example, LSTM gets less benefits from LIME pre-training @wu2021lime than Transformer @vaswani2017attention.
+A useful inductive bias can be instilled into the model by pre-training on data that demonstrates it. #cite(<mccoy2020universal>, form: "prose") use pre-training on natural languages with certain properties by model-agnostic meta-learning @finn2017model to find which biases are needed to quickly acquire these languages. #cite(<wu2021lime>, form: "prose") design synthetic datasets requiring deduction, induction and abduction and pre-train on them to extract inductive bias for general mathematical reasoning. #cite(<lindemann2023injecting>, form: "prose") pre-train models to simulate finite state transducers given their description and achieve better generalization in NLP tasks with similar structure.
 
 == Open questions
 
@@ -121,6 +92,7 @@ As mentined above, there were many works that studied transfer learning from art
 - Compare the complexity of synthethic languages by training a model on one language and then fine-tuning to another.
 - To get more feedback from these experiments, fine-tuning is done in several stages, each one allowing more complexity to be learned.
 - Study the structure of the embedding space, in terms of the singular values of correlation matrix and by running KMeans algorithm on it with different number of clusters.
+- Consider an algorithm that can be learned by the model in order to model the datasets used and what it implies about their complexity.
 - Train linear probes to predict grammatical features of the words represented by tokens and their frequency, thus showing what information might be contained in the embeddings.
 - Introduce a new natural languge understanding dataset tailored for less capable models which benchmarks the model performance on 12 diverse subtasks.
 
@@ -296,9 +268,9 @@ An important obseration is that transfer learning between languages is not symme
 This procedure is not completely formalized, in particular, I don't have a principled way to measure the "difficulty" of fine-tuning. An approach that seems reasonable is to look at the first stage of fine-tuning which is enough to get the performance close to the performance of the model pre-trained on the second language. 
 
 === Results
-#note[Why TinyStories-8M? What hyperparameters?]
+For all experiments I used TinyStories-8M model @eldan2023tinystories. For pre-training I was waiting till convergence close to theoretical lower bounds of loss, or just long stagnation, which took $40$K to $100$K steps. Batch size was $8$ and sequence length was $512$ tokens, so I used $160$M to $400$M tokens for pre-training. For fine-tuning, at each stage I used a fixed amount of 12500 steps, batch size was again $8$ and sequence length was $512$ for bracket datasets and $128$ for English (TinyStories), which means $51$M and $13$M tokens correspondingly. Learning rate was $10^(-3)$ for the pre-training and $[10^(-2), 2 dot 10^(-2), 10^(-3)]$ for the three stages of fine-tuning.
 
-In the table below there are the results of fine-tuning in both directions on certain pairs of languages. Columns "L2 ..." describe fine-tuning on the second language after pre-training on the first one, "L2 full" is the performance of the model trained on the second language from scratch. Columns "L1 ..." and "L1 full" are symmetrical, for fine-tuning on the first language. "E", "L" and "T" mean what layers were fine-tuned and stand for embeddings, LayerNorms and (the last) Transformer block. I use the absolute difference of 0.2 nats per token as a threshold for "close performance". 
+The table below presents the results of fine-tuning in both directions on certain pairs of languages. Columns "L2 ..." describe fine-tuning on the second language after pre-training on the first one, "L2 full" is the performance of the model trained on the second language from scratch. Columns "L1 ..." and "L1 full" are symmetrical, for fine-tuning on the first language. "E", "L" and "T" mean what layers were fine-tuned and stand for embeddings, LayerNorms and (the last) Transformer block. I use the absolute difference of 0.2 nats per token as a threshold for "close performance". 
 
 
 
@@ -374,9 +346,9 @@ Checking in what way what the language model actually does corresponds to this a
 
 #align(center)[#image("../img/observed.svg", height: 250pt)]
 
-Note that the algorithm can be trivially extended to `flat` language, by removing the exponentiation part --- now the "stack" is simply a sum of the embeddings of tokens in it. This finally provides a possible explanation of the structure of the embedding space. For `nested`, the only important property is that each vector has higher dot product with itself than with other vectors, because the embedding of the last open bracket will have more weight than all other tokens in the stack and so they will not interfere with eah other. But for `flat` the model needs access not only to the top of the stack, but to all the tokens in it, which means that arbitrary linear combination of the embeddings should be uniquely decodable. This requires the embeddings to be orthogonal. 
+Note that the algorithm can be trivially extended to `flat` language, by removing the exponentiation part --- now the "stack" is simply a sum of the embeddings of tokens in it. 
 
-For all four models I measured whether their embedding vectors have the same, or close, norm, and whether they are close to orthogonal. The results are shown in the table below. Covariance means the average dot product of two different embedding vectors, and variance means the average squared norm of an embedding vector.
+This provides a partial explanation of the structure of the embedding space. For `nested`, the only important property is that each vector has higher dot product with itself than with other vectors, because the embedding of the last open bracket will have more weight than all other tokens in the stack and so they will not interfere with eah other. But for `flat` the model needs access not only to the top of the stack, but to all the tokens in it, which means that arbitrary linear combination of the embeddings should be uniquely decodable. This requires the embeddings to be orthogonal. However, this does not explain why the embeddings during fine-tuning will get the same structure as during pre-training. To check if it is the case for pre-training, for all four models I measured whether their embedding vectors have the same, or close, norm, and whether they are close to orthogonal. The results are shown in the table below. Covariance means the average dot product of two different embedding vectors, and variance means the average squared norm of an embedding vector.
 
 #align(center)[
 #table(
@@ -399,7 +371,7 @@ There are non-trivial performance gains in all language pairs from simply tuning
 
 === Dimensionality and clusters
 
-The embedding dimension of the model used is $d = 256$, and human intuition, as well as many visualization techniques, works poorly for $256$-dimensional vectors, so I employ two quantatitive approaches.
+The embedding dimension of the model used is $d = 256$, and human intuition, as well as many visualization techniques, works poorly for $256$-dimensional vectors, so I employ two quantitative approaches.
 
 First, for a $n times d$ matrix of embeddings $E$, I consider its singular values (after zeroing out the mean of each column), or equivalently, the spectrum of the covariation matrix $A = E^T E$. The motivation behind this is that if all embeddings were contained in a $k$-dimensional subpace, and $E$ had a rank $k$, then only $k$ of the singular values would be nonzero. For real data it is not the case, all singular values are nonzero due, but still some directions have much larger variance then others and the model is more likely to use features corresponding to those dimensions. 
 
@@ -519,8 +491,8 @@ In terms of general trends there are two interesting observations. First, models
 
 = Conclusion
 
-#note[Say something about hypotheses, e.g.:
-- Complex synthethic languages lead to better results, as demonstrated by embedding structure and cloze test performance of `flat_shuffle`
-- Models are not strictly limited by the complexity of the synthethic dataset and can learn features that don't have direct analogy in the pre-training task 
-- Perhaps a more sophisticated pre-training dataset simply causes the model to have richer structure, which then can be used in completely different ways during transfer learning, as in reservoir computing
-]
+A new synthethic language `flat_shuffle` was introduced and the model pre-trained on it was shown to outperform the models based on the languages from previous work. 
+
+Investigation of the struture of the embeddings leads to a hypothesis that a reason behind the superior performance of some synthethic languages is that they require more orthogonal embeddings in pre-training task, which causes the intermediate layers to be adapted to work with such embeddings, and in turn allows effectively using higher dimension subspace of the embedding space during fine-tuning, which gives more flexibility. Testing this hypothesis is left for the future work.
+
+No direct transfer of knowledge or structure was found, instead it seems that models are working in reservoir computing style where the computations for an unrelated task are adapted to the task at hand in arbitrary ways. At the same time it means that the models are not stricty limited by the complexity or structure of the original task in transfer learning, and as long as they have enough complexity of computations, they can use it to adapt to the new task.
