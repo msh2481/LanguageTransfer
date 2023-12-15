@@ -475,6 +475,39 @@ def cross_loss(
 
 
 @typed
+def get_activations(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    prompt: str,
+) -> tuple[dict[str, TT | tuple], dict[str, TT | tuple]]:
+    input_dict: dict[str, TT | tuple] = {}
+    output_dict: dict[str, TT | tuple] = {}
+    with Hooks(model, activation_saver(input_dict, output_dict)):
+        model(**tokenize(tokenizer, prompt))
+    return input_dict, output_dict
+
+
+@typed
+def get_layer_residuals(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    prompt: str,
+    layer_list: list[str],
+) -> list[Float[TT, "seq d"]]:
+    _, output_dict = get_activations(model, tokenizer, prompt)
+    activations = []
+    for i, layer_name in enumerate(layer_list):
+        assert "lm_head" not in layer_name
+        raw_output = output_dict[layer_name]
+        tensor = (raw_output if isinstance(raw_output, TT) else raw_output[0]).squeeze(0)
+        if i > 1:
+            activations.append(tensor - activations[-1])
+        else:
+            activations.append(tensor)
+    return activations
+
+
+@typed
 def path_patching(
     model: PreTrainedModel,
     tokenizer: PreTrainedTokenizerBase,
