@@ -120,6 +120,7 @@ def tokenize(
     else:
         result = tokenizer(tokenizer.decode(prompt), return_tensors="pt")
     result["labels"] = result["input_ids"]
+    assert (result["input_ids"] < 500).all()
     return {name: value.to(device) for name, value in result.items()}
 
 
@@ -499,7 +500,9 @@ def get_layer_residuals(
     for i, layer_name in enumerate(layer_list):
         assert "lm_head" not in layer_name
         raw_output = output_dict[layer_name]
-        tensor = (raw_output if isinstance(raw_output, TT) else raw_output[0]).squeeze(0)
+        tensor = (raw_output if isinstance(raw_output, TT) else raw_output[0]).squeeze(
+            0
+        )
         if i > 1:
             activations.append(tensor - activations[-1])
         else:
@@ -569,12 +572,12 @@ def random_nested_prompt(n: int, n_types: int = 250) -> str:
 
 
 @typed
-def prompt_from_template(template: str) -> str:
+def prompt_from_template(template: str, random: bool) -> str:
     stack = []
     result = []
     for c in template:
         if c == "(":
-            bracket_type = np.random.randint(0, 250)
+            bracket_type = np.random.randint(0, 250) if random else len(stack)
             stack.append(bracket_type)
             result.append(f"<{bracket_type + 1}")
         elif c == ")":
