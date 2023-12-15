@@ -18,7 +18,7 @@ from beartype.door import die_if_unbearable as assert_type
 from beartype.typing import Callable, Iterable
 from beartype.vale import Is
 from datasets import IterableDataset
-from jaxtyping import Float, Int, Bool
+from jaxtyping import Bool, Float, Int
 from numpy import ndarray as ND
 from torch import Tensor as TT
 from tqdm import tqdm
@@ -28,6 +28,8 @@ from transformers import (
     PreTrainedModel,
     PreTrainedTokenizerBase,
 )
+
+from languages import dependencies_tokenizer
 
 
 def seed_everything(seed):
@@ -251,9 +253,9 @@ def singular_vectors(data: Float[TT, "n d"]) -> Float[TT, "n d"]:
 def linear_regression_probe(
     embeddings: Float[TT, "n d"], features: Float[TT, "n"]
 ) -> float:
-    from sklearn.model_selection import train_test_split
     from sklearn.linear_model import Ridge
     from sklearn.metrics import r2_score
+    from sklearn.model_selection import train_test_split
 
     X_train, X_test, y_train, y_test = train_test_split(
         embeddings, features, test_size=0.2
@@ -267,9 +269,9 @@ def linear_regression_probe(
 def linear_classification_probe(
     embeddings: Float[TT, "n d"], features: Bool[TT, "n"]
 ) -> float:
-    from sklearn.model_selection import train_test_split
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import roc_auc_score
+    from sklearn.model_selection import train_test_split
 
     X_train, X_test, y_train, y_test = train_test_split(
         embeddings,
@@ -340,3 +342,209 @@ def dependencies_del(
                 results[i, j + (j >= i)] = original[j + (j >= i)] - lp_for_id[j]
 
     return t.triu(results)
+
+
+@typed
+def sh(a: TT | tuple) -> list | tuple:
+    if isinstance(a, tuple):
+        return tuple(sh(x) for x in a)
+    else:
+        return list(a.shape)
+
+
+@typed
+def ls(a) -> str:
+    if isinstance(a, TT) and a.shape == ():
+        return ls(a.item())
+    if isinstance(a, float):
+        return f"{a:.2f}"
+    if isinstance(a, int) or isinstance(a, bool):
+        return str(int(a))
+    if not hasattr(a, "__len__"):
+        return str(a)
+    brackets = "()" if isinstance(a, tuple) else "[]"
+    children = [ls(x) for x in a]
+    if any("(" in x or "[" in x for x in children):
+        delim = "\n"
+    else:
+        delim = " "
+    return delim.join([brackets[0]] + children + [brackets[1]])
+
+
+@typed
+def lincomb(
+    alpha: float,
+    x: TT | tuple,
+    beta: float,
+    y: TT | tuple,
+) -> TT | tuple:
+    if isinstance(x, tuple) and len(x) == 1:
+        return lincomb(alpha, x[0], beta, y)
+    if isinstance(y, tuple) and len(y) == 1:
+        return lincomb(alpha, x, beta, y[0])
+    if isinstance(x, TT) or isinstance(y, TT):
+        assert x.shape == y.shape
+        return alpha * x + beta * y
+    else:
+        assert len(x) == len(y)
+        return tuple(lincomb(alpha, xi, beta, yi) for xi, yi in zip(x, y))
+
+
+@typed
+def activation_saver(
+    inputs_dict: dict[str, TT | tuple],
+    outputs_dict: dict[str, TT | tuple],
+) -> Callable:
+    @typed
+    def hook(
+        name: str, _module: nn.Module, input: TT | tuple, output: TT | tuple
+    ) -> None:
+        inputs_dict[name] = input
+        outputs_dict[name] = output
+
+    return hook
+
+
+@typed
+def chain_patcher(
+    steps: list[str],
+    real_inputs: dict[str, TT | tuple],
+    inputs_dict: dict[str, TT | tuple],
+    outputs_dict: dict[str, TT | tuple],
+) -> Callable:
+    @typed
+    def hook(
+        name: str, _module: nn.Module, input: TT | tuple, output: TT | tuple
+    ) -> TT | tuple:
+        if name in steps:
+            if "wte" in name:
+                return output
+            delta = lincomb(1.0, real_inputs[name], -1.0, input)
+            if (
+                len(output) > len(delta)
+                and len(delta) == 1
+                and isinstance(delta, tuple)
+            ) or (isinstance(output, tuple) and isinstance(delta, TT)):
+                a, b = output
+                return (lincomb(1.0, a, 1.0, delta), b)
+            output = lincomb(1.0, output, 1.0, delta)
+
+        inputs_dict[name] = input
+        outputs_dict[name] = output
+        return output
+
+    return hook
+
+
+class Hooks:
+    @typed
+    def __init__(
+        self,
+        module: nn.Module,
+        hook: Callable[[str, nn.Module, TT, TT], TT],
+    ) -> None:
+        from functools import partial
+
+        self.handles = []
+        self.module = module
+        for name, submodule in module.named_modules():
+            if "." in name:
+                self.handles.append(
+                    submodule.register_forward_hook(partial(hook, name))
+                )
+
+    @typed
+    def __enter__(self) -> None:
+        pass
+
+    @typed
+    def __exit__(self, *_) -> None:
+        for handle in self.handles:
+            handle.remove()
+
+
+@typed
+def cross_loss(
+    model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, prompt: str, label: str
+) -> float:
+    logprobs: Float[TT, "seq vocab"] = get_logprobs(model, tokenizer, prompt)
+    ids: Int[TT, "seq"] = tokenize(tokenizer, label)["input_ids"][0]
+    assert len(logprobs) == len(ids)
+    losses: Float[TT, "seq"] = logprobs_to_losses(logprobs, ids)
+    return losses[1:].mean().item()
+
+
+@typed
+def path_patching(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    real_prompt: str,
+    corrupted_prompt: str,
+    steps: list[str],
+) -> float:
+    real_inputs: dict[str, TT | tuple] = {}
+    real_outputs: dict[str, TT | tuple] = {}
+    with Hooks(model, activation_saver(real_inputs, real_outputs)):
+        real_loss = cross_loss(model, tokenizer, prompt=real_prompt, label=real_prompt)
+
+    corrupted_inputs: dict[str, TT | tuple] = {}
+    corrupted_outputs: dict[str, TT | tuple] = {}
+    with Hooks(
+        model,
+        chain_patcher(
+            steps=steps,
+            real_inputs=real_inputs,
+            inputs_dict=corrupted_inputs,
+            outputs_dict=corrupted_outputs,
+        ),
+    ):
+        corrupted_loss = cross_loss(
+            model, tokenizer, prompt=corrupted_prompt, label=real_prompt
+        )
+    return corrupted_loss - real_loss
+
+
+@typed
+def patch_all_pairs(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    real_prompt: str,
+    corrupted_prompt: str,
+    layer_list: list[str],
+) -> Float[TT, "n_layers n_layers"]:
+    n_layers = len(layer_list)
+    losses: Float[TT, "n_layers n_layers"] = t.zeros((n_layers, n_layers))
+    for i in range(n_layers):
+        for j in range(n_layers):
+            losses[i, j] = path_patching(
+                model,
+                tokenizer,
+                real_prompt=real_prompt,
+                corrupted_prompt=corrupted_prompt,
+                steps=[layer_list[i], layer_list[j]],
+            )
+    return losses
+
+
+@typed
+def random_nested_prompt(n: int, n_types: int = 250) -> str:
+    types = np.random.randint(0, n_types, (n,))
+    ids = np.concatenate((2 * types, 2 * types[::-1] + 1))
+    tokenizer = dependencies_tokenizer(vocab_size=2 * n_types)
+    result = tokenizer.decode(ids)
+    return result
+
+
+@typed
+def prompt_from_template(template: str) -> str:
+    stack = []
+    result = []
+    for c in template:
+        if c == "(":
+            bracket_type = np.random.randint(0, 250)
+            stack.append(bracket_type)
+            result.append(f"<{bracket_type + 1}")
+        elif c == ")":
+            bracket_type = stack.pop()
+            result.append(f"{bracket_type + 1}>")
+    return " ".join(result)
