@@ -584,3 +584,51 @@ def prompt_from_template(template: str, random: bool) -> str:
             bracket_type = stack.pop()
             result.append(f"{bracket_type + 1}>")
     return " ".join(result)
+
+
+@typed
+def describe_points(
+    points: Float[TT, "n d"], svdvals=True, var=True, pca=False, cosine=True
+) -> None:
+    from sklearn.decomposition import PCA
+
+    if svdvals:
+        s = spectrum(points)
+        print("Singular values:", s.sum().item(), s.numpy())
+    if var:
+        with_mean = ein.einsum(points, points, "n d, n d -> ").sqrt().item()
+        white = points - points.mean(0)
+        without_mean = ein.einsum(white, white, "n d, n d -> ").sqrt().item()
+        print(
+            "sqrt E[x x^T]:",
+            with_mean,
+            "\nsqrt E[(x-mu) (x-mu)^T]:",
+            without_mean,
+            "\nRatio:",
+            without_mean / with_mean,
+        )
+    if pca:
+        plt.figure(figsize=(5, 5))
+        coords = PCA(n_components=2).fit_transform(points)
+        plt.scatter(coords[:, 0], coords[:, 1])
+        plt.show()
+    if cosine:
+        plt.figure(figsize=(5, 5))
+        n = len(points)
+        c = t.zeros(n, n)
+        for i in range(n):
+            for j in range(n):
+                c[i, j] = t.cosine_similarity(points[i], points[j], dim=0)
+        plt.imshow(c)
+        plt.colorbar()
+        plt.show()
+
+@typed
+def get_balances(prompt: str) -> Int[TT, "n_tokens"]:
+    result = []
+    for c in prompt:
+        if c in "(<":
+            result.append(1)
+        elif c in ">)":
+            result.append(-1)
+    return t.tensor(result).cumsum(dim=0)
