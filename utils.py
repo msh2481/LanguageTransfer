@@ -417,10 +417,17 @@ def chain_patcher(
     def hook(
         name: str, _module: nn.Module, input: TT | tuple, output: TT | tuple
     ) -> TT | tuple:
-        if name in steps:
-            if "wte" in name:
-                return output
-            delta = lincomb(1.0, real_inputs[name], -1.0, input)
+        inputs_dict[name] = input
+
+        if (name in steps) and ("wte" not in name):
+            name_for_delta = name
+            if "attn" in name:
+                name_for_delta = ".".join(name.split(".")[:-1] + ["ln_1"])
+            if "mlp" in name:
+                name_for_delta = ".".join(name.split(".")[:-1] + ["ln_2"])
+            delta = lincomb(
+                1.0, real_inputs[name_for_delta], -1.0, inputs_dict[name_for_delta]
+            ).detach()
             if (
                 len(output) > len(delta)
                 and len(delta) == 1
@@ -430,7 +437,6 @@ def chain_patcher(
                 return (lincomb(1.0, a, 1.0, delta), b)
             output = lincomb(1.0, output, 1.0, delta)
 
-        inputs_dict[name] = input
         outputs_dict[name] = output
         return output
 
@@ -622,6 +628,7 @@ def describe_points(
         plt.imshow(c)
         plt.colorbar()
         plt.show()
+
 
 @typed
 def get_balances(prompt: str) -> Int[TT, "n_tokens"]:
