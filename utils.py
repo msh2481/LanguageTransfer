@@ -3,6 +3,7 @@ import random
 from itertools import islice
 from typing import Annotated, Any, Mapping, TypeVar
 
+import circuitsvis
 import einops as ein
 import lightning.pytorch as pl  # type: ignore
 import matplotlib.pyplot as plt
@@ -482,6 +483,17 @@ def cross_loss(
 
 
 @typed
+def cross_loss_last(
+    model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, prompt: str, label: str
+) -> float:
+    logprobs: Float[TT, "seq vocab"] = get_logprobs(model, tokenizer, prompt)
+    ids: Int[TT, "seq"] = tokenize(tokenizer, label)["input_ids"][0]
+    assert len(logprobs) == len(ids)
+    losses: Float[TT, "seq"] = logprobs_to_losses(logprobs, ids)
+    return losses[-1].item()
+
+
+@typed
 def get_activations(
     model: PreTrainedModel,
     tokenizer: PreTrainedTokenizerBase,
@@ -492,6 +504,66 @@ def get_activations(
     with Hooks(model, activation_saver(input_dict, output_dict)):
         model(**tokenize(tokenizer, prompt))
     return input_dict, output_dict
+
+
+@typed
+def prediction_evolution(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    prompt: str,
+) -> tuple[list[str], Float[TT, "n_layers seq vocab"]]:
+    _, output_dict = get_activations(model, tokenizer, prompt)
+    layer_names: list[str] = []
+    layer_predictions: list[Float[TT, "seq vocab"]] = []
+
+    @typed
+    def process(name: str) -> None:
+        activation = output_dict[name]
+        if isinstance(activation, tuple):
+            activation = activation[0]
+        assert_type(activation, Float[TT, "batch seq d"])
+        activation = activation.squeeze(0)
+        logits = model.lm_head(model.transformer.ln_f(activation)).detach()
+        assert_type(logits, Float[TT, "seq vocab"])
+        logprobs = F.log_softmax(logits, dim=-1)
+
+        layer_names.append(name[len("transformer.") :])
+        layer_predictions.append(logprobs)
+
+    process("transformer.wte")
+    for layer in range(model.config.num_layers):
+        process(f"transformer.h.{layer}.attn")
+        process(f"transformer.h.{layer}.mlp")
+
+    return layer_names, t.stack(layer_predictions)
+
+
+@typed
+def track_predictions(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    prompt: str,
+    position: int,
+) -> None:
+    evolution = prediction_evolution(model, tokenizer, prompt)
+    assert position != -1
+    print("Target token:", tokenizer.tokenize(prompt)[position + 1])
+    int_predictions = evolution[1][:, position, :].argmax(dim=-1).numpy()
+    print("Predictions:", tokenizer.convert_ids_to_tokens(int_predictions))
+    names = evolution[0]
+    for token in range(len(tokenizer)):
+        history = evolution[1][:, position, token].exp()
+        if history[-1] < 0.01:
+            continue
+        str_token = tokenizer.convert_ids_to_tokens(token)
+        plt.plot(names, history, label=f"{str_token} ({token})")
+    history = evolution[1][:, position, ::2].exp().sum(dim=-1)
+    plt.plot(names, history, label="open (::2)")
+    plt.ylim(0, 1)
+    plt.xticks(rotation=90)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
 
 @typed
@@ -543,6 +615,50 @@ def path_patching(
             model, tokenizer, prompt=corrupted_prompt, label=real_prompt
         )
     return corrupted_loss - real_loss
+
+
+@typed
+def layer_importance_on_last_token(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    real_prompt: str,
+    corrupted_prompt: str,
+) -> dict[str, float]:
+    assert len(tokenizer.tokenize(real_prompt)) == len(tokenizer.tokenize(corrupted_prompt))
+
+    real_inputs: dict[str, TT | tuple] = {}
+    real_outputs: dict[str, TT | tuple] = {}
+    with Hooks(model, activation_saver(real_inputs, real_outputs)):
+        real_loss = cross_loss_last(
+            model, tokenizer, prompt=real_prompt, label=real_prompt
+        )
+
+    results: dict[str, float] = {}
+
+    @typed
+    def process(name: str) -> None:
+        corrupted_inputs: dict[str, TT | tuple] = {}
+        corrupted_outputs: dict[str, TT | tuple] = {}
+        with Hooks(
+            model,
+            chain_patcher(
+                steps=[name],
+                real_inputs=real_inputs,
+                inputs_dict=corrupted_inputs,
+                outputs_dict=corrupted_outputs,
+            ),
+        ):
+            corrupted_loss = cross_loss_last(
+                model, tokenizer, prompt=corrupted_prompt, label=real_prompt
+            )
+        results[name] = corrupted_loss - real_loss
+
+    process("transformer.wte")
+    for layer in range(model.config.num_layers):
+        process(f"transformer.h.{layer}.attn")
+        process(f"transformer.h.{layer}.mlp")
+
+    return results
 
 
 @typed
@@ -665,19 +781,22 @@ def qk_to_attention_pattern(
 @typed
 def show_patterns(
     model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, prompt: str, layer: int
-) -> None:
+) -> circuitsvis.attention.RenderedHTML:
     _, activations = get_activations(model, tokenizer, prompt)
     q = activations[f"transformer.h.{layer}.attn.attention.q_proj"].squeeze(0)
     k = activations[f"transformer.h.{layer}.attn.attention.k_proj"].squeeze(0)
     n_heads = model.config.num_heads
     pattern = qk_to_attention_pattern(q, k, n_heads=n_heads)
 
-    assert n_heads % 4 == 0
-    plt.figure(figsize=(8, 8))
-    for head in range(n_heads):
-        plt.subplot(n_heads // 4, 4, head + 1)
-        plt.gca().set_title(f"Head {head}")
-        plt.imshow(pattern[head].detach())
-        plt.axis("off")
-    plt.tight_layout()
-    plt.show()
+    # assert n_heads % 4 == 0
+    # plt.figure(figsize=(8, 8))
+    # for head in range(n_heads):
+    #     plt.subplot(n_heads // 4, 4, head + 1)
+    #     plt.gca().set_title(f"Head {head}")
+    #     plt.imshow(pattern[head].detach())
+    #     plt.axis("off")
+    # plt.tight_layout()
+    # plt.show()
+
+    tokens = tokenizer.tokenize(prompt)
+    return circuitsvis.attention.attention_heads(pattern, tokens)
