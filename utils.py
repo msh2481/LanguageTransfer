@@ -120,7 +120,7 @@ def tokenize(
     else:
         result = tokenizer(tokenizer.decode(prompt), return_tensors="pt")
     result["labels"] = result["input_ids"]
-    assert (result["input_ids"] < 500).all()
+    assert (result["input_ids"] < len(tokenizer) - 2).all()
     return {name: value.to(device) for name, value in result.items()}
 
 
@@ -506,9 +506,8 @@ def get_layer_residuals(
     for i, layer_name in enumerate(layer_list):
         assert "lm_head" not in layer_name
         raw_output = output_dict[layer_name]
-        tensor = (raw_output if isinstance(raw_output, TT) else raw_output[0]).squeeze(
-            0
-        )
+        is_tensor = isinstance(raw_output, TT)
+        tensor = (raw_output if is_tensor else raw_output[0]).squeeze(0)
         if i > 1:
             activations.append(tensor - activations[-1])
         else:
@@ -639,3 +638,46 @@ def get_balances(prompt: str) -> Int[TT, "n_tokens"]:
         elif c in ">)":
             result.append(-1)
     return t.tensor(result).cumsum(dim=0)
+
+
+max_len = 256  # to avoid effects of local attention
+bias = t.tril(t.ones((max_len, max_len), dtype=bool)).view(1, max_len, max_len)
+
+
+@typed
+def qk_to_attention_pattern(
+    q: Float[TT, "n_q n_heads_d"], k: Float[TT, "n_k n_heads_d"], n_heads: int
+) -> Float[TT, "n_heads n_q n_k"]:
+    assert q.shape[0] == k.shape[0]
+    seq_len = q.shape[0]
+    assert seq_len <= max_len
+    qs = ein.rearrange(q, "n_q (n_heads d) -> n_heads n_q d", n_heads=n_heads)
+    ks = ein.rearrange(k, "n_k (n_heads d) -> n_heads n_k d", n_heads=n_heads)
+    raw = ein.einsum(qs, ks, "n_heads n_q d, n_heads n_k d -> n_heads n_q n_k")
+    causal_mask = bias[:, :seq_len, :seq_len]
+    mask_value = t.finfo(raw.dtype).min
+    raw = t.where(causal_mask, raw, mask_value)
+    # seems GPTNeo implementation in transformers doesn't scale by sqrt(d)
+    normalized = F.softmax(raw, dim=-1)
+    return normalized
+
+
+@typed
+def show_patterns(
+    model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, prompt: str, layer: int
+) -> None:
+    _, activations = get_activations(model, tokenizer, prompt)
+    q = activations[f"transformer.h.{layer}.attn.attention.q_proj"].squeeze(0)
+    k = activations[f"transformer.h.{layer}.attn.attention.k_proj"].squeeze(0)
+    n_heads = model.config.num_heads
+    pattern = qk_to_attention_pattern(q, k, n_heads=n_heads)
+
+    assert n_heads % 4 == 0
+    plt.figure(figsize=(8, 8))
+    for head in range(n_heads):
+        plt.subplot(n_heads // 4, 4, head + 1)
+        plt.gca().set_title(f"Head {head}")
+        plt.imshow(pattern[head].detach())
+        plt.axis("off")
+    plt.tight_layout()
+    plt.show()
