@@ -1,7 +1,8 @@
 import os
 import random
+from collections import defaultdict
 from itertools import islice
-from typing import Annotated, Any, Mapping, TypeVar
+from typing import Annotated, Any, Mapping, TypeVar, Literal
 
 import circuitsvis
 import einops as ein
@@ -624,7 +625,9 @@ def layer_importance_on_last_token(
     real_prompt: str,
     corrupted_prompt: str,
 ) -> dict[str, float]:
-    assert len(tokenizer.tokenize(real_prompt)) == len(tokenizer.tokenize(corrupted_prompt))
+    assert len(tokenizer.tokenize(real_prompt)) == len(
+        tokenizer.tokenize(corrupted_prompt)
+    )
 
     real_inputs: dict[str, TT | tuple] = {}
     real_outputs: dict[str, TT | tuple] = {}
@@ -800,3 +803,141 @@ def show_patterns(
 
     tokens = tokenizer.tokenize(prompt)
     return circuitsvis.attention.attention_heads(pattern, tokens)
+
+
+@typed
+def input_output_mapping(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    prompts: list[str],
+    input_layer: str,
+    output_layer: str,
+) -> tuple[Float[TT, "n_prompts seq_len d"], Float[TT, "n_prompts seq_len d"]]:
+    @typed
+    def squeeze_batch(
+        x: TT | tuple,
+    ) -> Float[TT, "total_tokens d"]:
+        if isinstance(x, tuple):
+            return squeeze_batch(x[0])
+        assert x.shape[0] == 1
+        return x.squeeze(0)
+
+    input_list: list[Float[TT, "tokens d"]] = []
+    output_list: list[Float[TT, "tokens d"]] = []
+    for prompt in prompts:
+        input_dict: dict[str, TT | tuple] = {}
+        output_dict: dict[str, TT | tuple] = {}
+        with Hooks(model, activation_saver(input_dict, output_dict)):
+            model(**tokenize(tokenizer, prompt))
+        input_list.append(squeeze_batch(input_dict[input_layer]).detach())
+        output_list.append(squeeze_batch(output_dict[output_layer]).detach())
+    return t.stack(input_list), t.stack(output_list)
+
+
+@typed
+def fit_linear(
+    input: Float[TT, "total_tokens d"],
+    output: Float[TT, "total_tokens d"],
+    reg: Literal["l1", "l2"] = "l2",
+    alpha: float = 0.0,
+) -> nn.Linear:
+    from sklearn.linear_model import Lasso, Ridge
+
+    if reg == "l1":
+        model = Lasso(alpha=alpha)
+    else:
+        model = Ridge(alpha=alpha)
+    model.fit(input, output)
+    linear = nn.Linear(input.shape[1], output.shape[1])
+    linear.weight.data = t.tensor(model.coef_, dtype=t.float32)
+    linear.bias.data = t.tensor(model.intercept_, dtype=t.float32)
+    return linear
+
+
+@typed
+def fit_module(
+    model: nn.Module,
+    input: Float[TT, "total_tokens d"],
+    output: Float[TT, "total_tokens d"],
+    lr: float,
+    l1: float = 0.0,
+    l2: float = 0.0,
+    batch_size: int = 512,
+    epochs: int = 10,
+) -> None:
+    optim = t.optim.AdamW(model.parameters(), lr=lr, weight_decay=l2)
+    dataloader = t.utils.data.DataLoader(
+        t.utils.data.TensorDataset(input, output),
+        batch_size=batch_size,
+        shuffle=True,
+    )
+    pbar = tqdm(range(epochs))
+    losses = []
+    for _ in pbar:
+        for x, y in dataloader:
+            optim.zero_grad()
+            p = model(x)
+            loss = F.mse_loss(p, y)
+            if l1:
+                loss = loss + l1 * sum(p.abs().sum() for p in model.parameters())
+            loss.backward()
+            optim.step()
+            losses.append(loss.item())
+            half_size = (len(losses) + 1) // 2
+            second_half_mean = sum(losses[-half_size:]) / half_size
+            pbar.set_postfix_str(f": {second_half_mean:.3f}")
+
+
+@typed
+def eval_module(
+    model: nn.Module,
+    input: Float[TT, "total_tokens d"],
+    output: Float[TT, "total_tokens d"],
+) -> float:
+    with t.no_grad():
+        p = model(input)
+        return F.mse_loss(p, output).item()
+
+
+class Residual(nn.Module):
+    @typed
+    def __init__(self, fn: nn.Module):
+        super().__init__()
+        self.fn = fn
+
+    @typed
+    def forward(self, x: TT, *args, **kwargs) -> TT:
+        return self.fn(x, *args, **kwargs) + x
+
+
+class Wrapper(nn.Module):
+    @typed
+    def __init__(
+        self, fn: nn.Module, ignore_extras: bool = True, append: tuple | None = None
+    ):
+        super().__init__()
+        self.fn = fn
+        self.ignore_extras = ignore_extras
+        self.append = append
+
+    def forward(self, x, *args, **kwargs):
+        if self.ignore_extras:
+            result = self.fn(x)
+        else:
+            result = self.fn(x, *args, **kwargs)
+        if self.append is not None:
+            return (result,) + self.append
+        else:
+            return result
+
+
+class PrefixMean(nn.Module):
+    @typed
+    def __init__(self):
+        super().__init__()
+
+    @typed
+    def forward(self, x: Float[TT, "... n 256"]) -> Float[TT, "... n 256"]:
+        sums = x.cumsum(dim=-2)
+        lens = t.arange(1, x.shape[-2] + 1).reshape([1] * (x.ndim - 2) + [-1, 1])
+        return sums / lens
