@@ -879,7 +879,8 @@ def fit_module(
             p = model(x)
             loss = F.mse_loss(p, y)
             if l1:
-                loss = loss + l1 * sum(p.abs().sum() for p in model.parameters())
+                params = list(model.parameters())
+                loss = loss + l1 * sum(p.abs().mean() for p in params) / len(params)
             loss.backward()
             optim.step()
             losses.append(loss.item())
