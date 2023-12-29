@@ -16,7 +16,7 @@ from torch import Tensor as TT
 from transformers import AutoModelForCausalLM, Trainer, TrainingArguments
 
 from languages import dependencies_tokenizer
-from utils import (
+from language_modeling import (
     fetch_or_ask,
     explore_batch,
 )

@@ -7,7 +7,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
 from itertools import islice
 
-from utils import (
+from language_modeling import (
     generate_sample,
     seed_everything,
     show_string_with_weights,
@@ -68,14 +68,14 @@ centers = t.randn((c, d))
 data = centers[t.randint(c, (n,))] + 0.01 * t.randn((n, m)) @ t.randn((m, d))
 
 # %%
-from utils import spectrum
+from language_modeling import spectrum
 s = spectrum(data)
 print(s.sum())
 plt.plot(s)
 plt.show()
 
 # %%
-from utils import singular_vectors
+from language_modeling import singular_vectors
 vecs = singular_vectors(data)
 print(vecs.shape)
 for vec in vecs:
@@ -88,14 +88,14 @@ for vec in vecs:
 # %%
 print(((centers[1] - centers[0]) / vecs[0]).tolist())
 # %%
-from utils import clusters
+from language_modeling import clusters
 cl = clusters(data)
 plt.plot(cl, "x", ms=5)
 plt.ylim(0, 16e3)
 plt.show()
 
 # %%
-from utils import mixed_probe
+from language_modeling import mixed_probe
 import pandas as pd
 
 n, d = 1000, 5

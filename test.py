@@ -7,7 +7,7 @@ class Slow(unittest.TestCase):
     @typed
     def setUp(self):
         from transformers import AutoModelForCausalLM, AutoTokenizer
-        from utils import seed_everything
+        from language_modeling import seed_everything
 
         seed_everything(0)
         if not (hasattr(self, "model") and hasattr(self, "tokenizer")):
@@ -17,7 +17,7 @@ class Slow(unittest.TestCase):
 
     @typed
     def test_sampling(self):
-        from utils import generate_sample
+        from language_modeling import generate_sample
 
         result = generate_sample(self.model, self.tokenizer, "<2 <8 <10", 10)
         self.assertEqual(result, "8> 10> 2> <28 28> <169 169> <44 44> <20")
@@ -28,7 +28,7 @@ class Slow(unittest.TestCase):
 class Fast(unittest.TestCase):
     @typed
     def test_spectrum(self):
-        from utils import spectrum, seed_everything
+        from language_modeling import spectrum, seed_everything
         seed_everything(0)
         n = 1000
         d = 10
