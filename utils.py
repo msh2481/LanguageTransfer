@@ -919,12 +919,8 @@ class SparseAutoEncoder(nn.Module):
         t.nn.init.normal_(self.bias_after, -bound, bound)
 
     @typed
-    def encode(
-        self, x: Float[TT, "... in_features"], std: float = 0.0
-    ) -> Float[TT, "... h_features"]:
-        return F.relu(
-            x @ self.weight + self.bias_before + std * t.randn_like(self.bias_before)
-        )
+    def encode(self, x: Float[TT, "... in_features"]) -> Float[TT, "... h_features"]:
+        return F.leaky_relu(x @ self.weight + self.bias_before, negative_slope=0.01)
 
     @typed
     def decode(self, x: Float[TT, "... h_features"]) -> Float[TT, "... in_features"]:
@@ -932,9 +928,9 @@ class SparseAutoEncoder(nn.Module):
 
     @typed
     def forward(
-        self, x: Float[TT, "... in_features"], std: float = 0.0
+        self, x: Float[TT, "... in_features"]
     ) -> tuple[Float[TT, "... in_features"], Float[TT, "... h_features"]]:
-        code = self.encode(x, std)
+        code = self.encode(x)
         decoded = self.decode(code)
         return decoded, code
 
@@ -943,14 +939,13 @@ class SparseAutoEncoder(nn.Module):
 def fit_sae(
     model: SparseAutoEncoder,
     data: Float[TT, "total_tokens input_dim"],
-    hidden_dim: int,
     lr: float,
     l1: float = 0.0,
+    alpha: float = 0.0,
     batch_size: int = 512,
     epochs: int = 10,
-    noise_std: float = 0.0,
 ) -> None:
-    optim = t.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    optim = t.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
     dataloader = t.utils.data.DataLoader(
         data,
         batch_size=batch_size,
@@ -962,19 +957,25 @@ def fit_sae(
     for _ in pbar:
         for x in dataloader:
             optim.zero_grad()
-            p, z = model(x, std=noise_std)
+            p, z = model(x)
             loss = F.mse_loss(p, x)
 
             loss_tracker.add(loss.item())
-            nonzero_tracker.add((z != 0).sum(dim=-1).float().mean().item())
+            nonzero_tracker.add((z.abs() > 0.01).sum(dim=-1).float().mean().item())
 
             eps = 1e-8
             rel = z.abs() / (z.abs().max(dim=-1, keepdim=True).values + eps)
-            loss = loss + l1 * (rel.mean() - (-10 * rel).exp().mean())
+            loss = loss + l1 * rel.mean()
+
+            sim = ein.einsum(z, z, "batch i, batch j -> i j")
+            assert_type(sim, Float[TT, "dict_dim dict_dim"])
+            nonorth = (sim - t.eye(model.h_features)).abs().mean()
+            loss = loss + alpha * nonorth
+
             loss.backward()
             optim.step()
             pbar.set_postfix_str(
-                f" loss: {loss_tracker.mean():.2f}, nonzero: {nonzero_tracker.mean():.2f} / {hidden_dim}"
+                f" loss={loss_tracker.mean():.2f}, nonzero={nonzero_tracker.mean():.2f} / {model.h_features}, nonorth={nonorth.item():.2f}"
             )
 
 
