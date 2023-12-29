@@ -854,6 +854,23 @@ def fit_linear(
     return linear
 
 
+from collections import deque
+
+
+class Tracker:
+    @typed
+    def __init__(self, max_window: int = 10**3):
+        self.history: deque[float] = deque(maxlen=max_window)
+
+    @typed
+    def add(self, x: float):
+        self.history.append(x)
+
+    @typed
+    def mean(self) -> float:
+        return sum(self.history) / len(self.history)
+
+
 @typed
 def fit_module(
     model: nn.Module,
@@ -872,7 +889,7 @@ def fit_module(
         shuffle=True,
     )
     pbar = tqdm(range(epochs))
-    losses = []
+    loss_tracker = Tracker()
     for _ in pbar:
         for x, y in dataloader:
             optim.zero_grad()
@@ -883,10 +900,82 @@ def fit_module(
                 loss = loss + l1 * sum(p.abs().mean() for p in params) / len(params)
             loss.backward()
             optim.step()
-            losses.append(loss.item())
-            half_size = (len(losses) + 1) // 2
-            second_half_mean = sum(losses[-half_size:]) / half_size
-            pbar.set_postfix_str(f": {second_half_mean:.3f}")
+            loss_tracker.add(loss.item())
+            pbar.set_postfix_str(f" loss: {loss_tracker.mean():.2f}")
+
+
+class SparseAutoEncoder(nn.Module):
+    @typed
+    def __init__(self, in_features: int, h_features: int):
+        super().__init__()
+        self.in_features = in_features
+        self.h_features = h_features
+        self.weight = nn.Parameter(t.empty((in_features, h_features)))
+        self.bias_before = nn.Parameter(t.empty((h_features,)))
+        self.bias_after = nn.Parameter(t.empty((in_features,)))
+        bound = (in_features * h_features) ** -0.25
+        t.nn.init.normal_(self.weight, -bound, bound)
+        t.nn.init.normal_(self.bias_before, -bound, bound)
+        t.nn.init.normal_(self.bias_after, -bound, bound)
+
+    @typed
+    def encode(
+        self, x: Float[TT, "... in_features"], std: float = 0.0
+    ) -> Float[TT, "... h_features"]:
+        return F.relu(
+            x @ self.weight + self.bias_before + std * t.randn_like(self.bias_before)
+        )
+
+    @typed
+    def decode(self, x: Float[TT, "... h_features"]) -> Float[TT, "... in_features"]:
+        return x @ self.weight.T + self.bias_after
+
+    @typed
+    def forward(
+        self, x: Float[TT, "... in_features"], std: float = 0.0
+    ) -> tuple[Float[TT, "... in_features"], Float[TT, "... h_features"]]:
+        code = self.encode(x, std)
+        decoded = self.decode(code)
+        return decoded, code
+
+
+@typed
+def fit_sae(
+    model: SparseAutoEncoder,
+    data: Float[TT, "total_tokens input_dim"],
+    hidden_dim: int,
+    lr: float,
+    l1: float = 0.0,
+    batch_size: int = 512,
+    epochs: int = 10,
+    noise_std: float = 0.0,
+) -> None:
+    optim = t.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    dataloader = t.utils.data.DataLoader(
+        data,
+        batch_size=batch_size,
+        shuffle=True,
+    )
+    pbar = tqdm(range(epochs))
+    loss_tracker = Tracker()
+    nonzero_tracker = Tracker()
+    for _ in pbar:
+        for x in dataloader:
+            optim.zero_grad()
+            p, z = model(x, std=noise_std)
+            loss = F.mse_loss(p, x)
+
+            loss_tracker.add(loss.item())
+            nonzero_tracker.add((z != 0).sum(dim=-1).float().mean().item())
+
+            eps = 1e-8
+            rel = z.abs() / (z.abs().max(dim=-1, keepdim=True).values + eps)
+            loss = loss + l1 * (rel.mean() - (-10 * rel).exp().mean())
+            loss.backward()
+            optim.step()
+            pbar.set_postfix_str(
+                f" loss: {loss_tracker.mean():.2f}, nonzero: {nonzero_tracker.mean():.2f} / {hidden_dim}"
+            )
 
 
 @typed
