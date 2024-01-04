@@ -83,21 +83,20 @@ class SparseAutoEncoder(nn.Module):
         super().__init__()
         self.in_features = in_features
         self.h_features = h_features
-        self.weight = nn.Parameter(t.empty((in_features, h_features)))
+        self.decoder = nn.Parameter(t.empty((h_features, in_features)))
         self.bias_before = nn.Parameter(t.empty((h_features,)))
-        self.bias_after = nn.Parameter(t.empty((in_features,)))
         bound = (in_features * h_features) ** -0.25
-        t.nn.init.normal_(self.weight, -bound, bound)
+        with t.no_grad():
+            self.decoder.data = random_ortho(h_features, in_features)
         t.nn.init.normal_(self.bias_before, -bound, bound)
-        t.nn.init.normal_(self.bias_after, -bound, bound)
 
     @typed
     def encode(self, x: Float[TT, "... in_features"]) -> Float[TT, "... h_features"]:
-        return F.relu(x @ self.weight + self.bias_before)
+        return F.relu(x @ self.decoder.T + self.bias_before)
 
     @typed
     def decode(self, x: Float[TT, "... h_features"]) -> Float[TT, "... in_features"]:
-        return x @ self.weight.T + self.bias_after
+        return x @ self.decoder
 
     @typed
     def forward(
@@ -115,12 +114,13 @@ def fit_sae(
     lr: float,
     l1: float = 0.0,
     alpha: float = 0.0,
+    delta: float = 0.05,
     batch_size: int = 512,
     epochs: int = 10,
 ) -> None:
     data = data.clone()
     data /= data.std()
-    optim = t.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
+    optim = t.optim.AdamW(model.parameters(), lr=lr)
     dataloader = t.utils.data.DataLoader(
         data,
         batch_size=batch_size,
@@ -138,13 +138,12 @@ def fit_sae(
             loss_tracker.add(loss.item())
             nonzero_tracker.add((z.abs() > 0.01).sum(dim=-1).float().mean().item())
 
-            eps = 1e-8
-            rel = z.abs() / (z.abs().max(dim=-1, keepdim=True).values + eps)
+            eps = t.tensor(1e-8)
+            rel = z.abs() / z.abs().max(dim=-1, keepdim=True).values.max(eps)
             loss = loss + l1 * rel.mean()
 
-            sim = ein.einsum(z, z, "batch i, batch j -> i j")
-            assert_type(sim, Float[TT, "dict_dim dict_dim"])
-            nonorth = (sim - t.eye(model.h_features)).abs().mean()
+            A = model.decoder @ model.decoder.T
+            nonorth = ((A - t.eye(model.h_features)).abs() - delta).clip(min=0).mean()
             loss = loss + alpha * nonorth
 
             loss.backward()
