@@ -184,7 +184,7 @@ def feature_effect(
     for name, (sae, direction) in directions.items():
         delta = t.zeros_like(old_activations[name])
         assert_type(delta, Float[TT, "seq d"])
-        direction_vector = sae.decoder[:, direction]
+        direction_vector = sae.decoder[direction]
         assert_type(direction_vector, Float[TT, "d"])
         delta[position] = direction_vector * eps
         deltas[name] = delta
