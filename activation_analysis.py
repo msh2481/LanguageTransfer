@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, NamedTuple
 
 import circuitsvis
 import einops as ein
@@ -12,8 +12,10 @@ from torch import Tensor as TT
 from tqdm import tqdm
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
-from hooks import Hooks, activation_saver, get_activations
-from language_modeling import tokenize
+from hooks import Hooks, activation_modifier, activation_saver, get_activations
+from language_modeling import get_logprobs, tokenize
+from sparse_autoencoders import SparseAutoEncoder
+from utils import Tracker
 
 
 @typed
@@ -62,6 +64,16 @@ def show_patterns(
 
 
 @typed
+def squeeze_batch(
+    x: TT | tuple,
+) -> TT:
+    if isinstance(x, tuple):
+        return squeeze_batch(x[0])
+    assert_type(x, Float[TT, "1 ..."])
+    return x.squeeze(0)
+
+
+@typed
 def input_output_mapping(
     model: PreTrainedModel,
     tokenizer: PreTrainedTokenizerBase,
@@ -69,15 +81,6 @@ def input_output_mapping(
     input_layer: str,
     output_layer: str,
 ) -> tuple[Float[TT, "n_prompts seq_len d"], Float[TT, "n_prompts seq_len d"]]:
-    @typed
-    def squeeze_batch(
-        x: TT | tuple,
-    ) -> Float[TT, "total_tokens d"]:
-        if isinstance(x, tuple):
-            return squeeze_batch(x[0])
-        assert x.shape[0] == 1
-        return x.squeeze(0)
-
     input_list: list[Float[TT, "tokens d"]] = []
     output_list: list[Float[TT, "tokens d"]] = []
     for prompt in prompts:
@@ -108,23 +111,6 @@ def fit_linear(
     linear.weight.data = t.tensor(model.coef_, dtype=t.float32)
     linear.bias.data = t.tensor(model.intercept_, dtype=t.float32)
     return linear
-
-
-from collections import deque
-
-
-class Tracker:
-    @typed
-    def __init__(self, max_window: int = 10**3):
-        self.history: deque[float] = deque(maxlen=max_window)
-
-    @typed
-    def add(self, x: float):
-        self.history.append(x)
-
-    @typed
-    def mean(self) -> float:
-        return sum(self.history) / len(self.history)
 
 
 @typed
@@ -160,91 +146,61 @@ def fit_module(
             pbar.set_postfix_str(f" loss: {loss_tracker.mean():.2f}")
 
 
-class SparseAutoEncoder(nn.Module):
-    @typed
-    def __init__(self, in_features: int, h_features: int):
-        super().__init__()
-        self.in_features = in_features
-        self.h_features = h_features
-        self.weight = nn.Parameter(t.empty((in_features, h_features)))
-        self.bias_before = nn.Parameter(t.empty((h_features,)))
-        self.bias_after = nn.Parameter(t.empty((in_features,)))
-        bound = (in_features * h_features) ** -0.25
-        t.nn.init.normal_(self.weight, -bound, bound)
-        t.nn.init.normal_(self.bias_before, -bound, bound)
-        t.nn.init.normal_(self.bias_after, -bound, bound)
-
-    @typed
-    def encode(self, x: Float[TT, "... in_features"]) -> Float[TT, "... h_features"]:
-        return F.leaky_relu(x @ self.weight + self.bias_before, negative_slope=0.01)
-
-    @typed
-    def decode(self, x: Float[TT, "... h_features"]) -> Float[TT, "... in_features"]:
-        return x @ self.weight.T + self.bias_after
-
-    @typed
-    def forward(
-        self, x: Float[TT, "... in_features"]
-    ) -> tuple[Float[TT, "... in_features"], Float[TT, "... h_features"]]:
-        code = self.encode(x)
-        decoded = self.decode(code)
-        return decoded, code
-
-
-@typed
-def fit_sae(
-    model: SparseAutoEncoder,
-    data: Float[TT, "total_tokens input_dim"],
-    lr: float,
-    l1: float = 0.0,
-    alpha: float = 0.0,
-    batch_size: int = 512,
-    epochs: int = 10,
-) -> None:
-    data = data.clone()
-    data /= data.std(dim=0, keepdim=True)
-    optim = t.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
-    dataloader = t.utils.data.DataLoader(
-        data,
-        batch_size=batch_size,
-        shuffle=True,
-    )
-    pbar = tqdm(range(epochs))
-    loss_tracker = Tracker()
-    nonzero_tracker = Tracker()
-    for _ in pbar:
-        for x in dataloader:
-            optim.zero_grad()
-            p, z = model(x)
-            loss = F.mse_loss(p, x)
-
-            loss_tracker.add(loss.item())
-            nonzero_tracker.add((z.abs() > 0.01).sum(dim=-1).float().mean().item())
-
-            eps = 1e-8
-            rel = z.abs() / (z.abs().max(dim=-1, keepdim=True).values + eps)
-            loss = loss + l1 * rel.mean()
-
-            sim = ein.einsum(z, z, "batch i, batch j -> i j")
-            assert_type(sim, Float[TT, "dict_dim dict_dim"])
-            nonorth = (sim - t.eye(model.h_features)).abs().mean()
-            loss = loss + alpha * nonorth
-
-            loss.backward()
-            optim.step()
-            pbar.set_postfix_str(
-                f" loss={loss_tracker.mean():.2f}, nonzero={nonzero_tracker.mean():.2f} / {model.h_features}, nonorth={nonorth.item():.2f}"
-            )
-
-
 @typed
 def compressed_activations(
     model: nn.Module,
     tokenizer: PreTrainedTokenizerBase,
     prompt: str,
     encoders: dict[str, SparseAutoEncoder],
-):
-    pass
+) -> dict[str, Float[TT, "dict_dim"]]:
+    _, activations = get_activations(model, tokenizer, prompt)
+    return {
+        name: encoder.encode(squeeze_batch(activations[name])).detach()
+        for name, encoder in encoders.items()
+    }
+
+
+class FeatureEffect(NamedTuple):
+    diff: dict[str, Float[TT, "seq d"]]
+    base: dict[str, Float[TT, "seq d"]]
+
+
+@typed
+def feature_effect(
+    model: nn.Module,
+    tokenizer: PreTrainedTokenizerBase,
+    prompt: str,
+    position: int,
+    directions: dict[str, tuple[SparseAutoEncoder, int]],
+    eps: float = 1e-3,
+) -> FeatureEffect:
+    old_logprobs = get_logprobs(model, tokenizer, prompt).roll(-1, dims=0)
+    assert_type(old_logprobs, Float[TT, "seq vocab"])
+    _, old_activations = get_activations(model, tokenizer, prompt)
+    old_activations = {k: squeeze_batch(v) for k, v in old_activations.items()}
+    old_activations["lm_head"] = old_logprobs
+
+    deltas = {}
+    for name, (sae, direction) in directions.items():
+        delta = t.zeros_like(old_activations[name])
+        assert_type(delta, Float[TT, "seq d"])
+        direction_vector = sae.weight[:, direction]
+        assert_type(direction_vector, Float[TT, "d"])
+        delta[position] = direction_vector * eps
+        deltas[name] = delta
+
+    with Hooks(model, activation_modifier(deltas)):
+        new_logprobs = get_logprobs(model, tokenizer, prompt).roll(-1, dims=0)
+        assert_type(new_logprobs, Float[TT, "seq vocab"])
+        _, new_activations = get_activations(model, tokenizer, prompt)
+        new_activations = {k: squeeze_batch(v) for k, v in new_activations.items()}
+        new_activations["lm_head"] = new_logprobs
+
+    old_activations = {k: v for k, v in old_activations.items() if v.ndim == 2}
+    difference = {
+        name: new_activations[name] - old_activations[name] for name in old_activations
+    }
+    return FeatureEffect(diff=difference, base=old_activations)
 
 
 @typed

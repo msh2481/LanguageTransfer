@@ -2,11 +2,11 @@ import torch.nn as nn
 from beartype import beartype as typed
 from beartype.door import die_if_unbearable as assert_type
 from beartype.typing import Callable
-
+from jaxtyping import Bool, Float, Int
 from torch import Tensor as TT
 from transformers import PreTrainedModel, PreTrainedTokenizerBase
 
-from language_modeling import cross_loss, cross_loss_last
+from language_modeling import tokenize, cross_loss, cross_loss_last
 
 
 @typed
@@ -39,6 +39,26 @@ def activation_saver(
     ) -> None:
         inputs_dict[name] = input
         outputs_dict[name] = output
+
+    return hook
+
+
+@typed
+def activation_modifier(
+    deltas: dict[str, Float[TT, "seq d"]],
+) -> Callable:
+    @typed
+    def hook(
+        name: str, _module: nn.Module, _input: TT | tuple, output: TT | tuple
+    ) -> TT | tuple:
+        if name not in deltas:
+            return output
+        if isinstance(output, TT):
+            assert_type(output, Float[TT, "1 seq d"])
+            return output + deltas[name]
+        assert isinstance(output, tuple) and isinstance(output[0], TT)
+        assert_type(output[0], Float[TT, "1 seq d"])
+        return (output[0] + deltas[name], *output[1:])
 
     return hook
 

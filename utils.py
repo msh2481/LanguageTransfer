@@ -1,10 +1,10 @@
 import os
 import random
+from collections import deque
 
 import numpy as np
 import torch as t
 from beartype import beartype as typed
-from beartype.door import die_if_unbearable as assert_type
 from jaxtyping import Bool, Float, Int
 from torch import Tensor as TT
 
@@ -106,3 +106,17 @@ def ls(a) -> str:
     else:
         delim = " "
     return delim.join([brackets[0]] + children + [brackets[1]])
+
+
+class Tracker:
+    @typed
+    def __init__(self, max_window: int = 10**3):
+        self.history: deque[float] = deque(maxlen=max_window)
+
+    @typed
+    def add(self, x: float):
+        self.history.append(x)
+
+    @typed
+    def mean(self) -> float:
+        return sum(self.history) / len(self.history)

@@ -238,3 +238,16 @@ def get_balances(prompt: str) -> Int[TT, "n_tokens"]:
         elif c in ">)":
             result.append(-1)
     return t.tensor(result).cumsum(dim=0)
+
+
+@typed
+def get_mean_balances(prompt: str) -> Float[TT, "n_tokens"]:
+    result = []
+    for c in prompt:
+        if c in "(<":
+            result.append(1)
+        elif c in ">)":
+            result.append(-1)
+    sums = t.tensor(result).cumsum(dim=0)
+    lens = t.arange(1, len(result) + 1)
+    return sums / lens
