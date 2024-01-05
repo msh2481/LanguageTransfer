@@ -4,4 +4,5 @@ __pycache__
 trainer
 wandb
 mlruns
+activations
 

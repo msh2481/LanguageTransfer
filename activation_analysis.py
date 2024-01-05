@@ -10,7 +10,7 @@ from beartype.door import die_if_unbearable as assert_type
 from jaxtyping import Bool, Float, Int
 from torch import Tensor as TT
 from tqdm import tqdm
-from transformers import PreTrainedModel, PreTrainedTokenizerBase
+from transformers import PreTrainedModel, PreTrainedTokenizerBase, GPTNeoForCausalLM
 
 from hooks import Hooks, activation_modifier, activation_saver, get_activations
 from language_modeling import get_logprobs, tokenize
@@ -201,6 +201,38 @@ def feature_effect(
         name: new_activations[name] - old_activations[name] for name in old_activations
     }
     return FeatureEffect(diff=difference, base=old_activations)
+
+
+@type
+def feature_causes(
+    model: GPTNeoForCausalLM,
+    tokenizer: PreTrainedTokenizerBase,
+    prompt: str,
+    layer: str,
+    sae: SparseAutoEncoder,
+    direction: int,
+) -> Float[TT, "seq"]:
+    tokenized = tokenize(tokenizer, prompt)
+    embeddings: Float[TT, "seq d"] = model.transformer.wte(
+        tokenized["input_ids"]
+    ).clone()
+    del tokenized["input_ids"]
+
+    input_dict: dict[str, TT | tuple] = {}
+    output_dict: dict[str, TT | tuple] = {}
+    embeddings.requires_grad_(True)
+    with Hooks(model, activation_saver(input_dict, output_dict)):
+        model(inputs_embeds=embeddings, **tokenized)
+    full_activations = sae.encode(squeeze_batch(output_dict[layer]))
+    assert_type(full_activations, Float[TT, "seq d"])
+    feature_activation = full_activations[-1, direction]
+
+    model.zero_grad()
+    feature_activation.abs().backward()
+    gradients = embeddings.grad.clone()
+    assert_type(gradients, Float[TT, "seq d"])
+
+    return gradients.norm(dim=1)
 
 
 @typed
