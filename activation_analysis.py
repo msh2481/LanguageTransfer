@@ -152,7 +152,7 @@ def compressed_activations(
     tokenizer: PreTrainedTokenizerBase,
     prompt: str,
     encoders: dict[str, SparseAutoEncoder],
-) -> dict[str, Float[TT, "dict_dim"]]:
+) -> dict[str, Float[TT, "seq dict_dim"]]:
     _, activations = get_activations(model, tokenizer, prompt)
     return {
         name: encoder.encode(squeeze_batch(activations[name])).detach()

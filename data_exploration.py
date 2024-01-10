@@ -57,7 +57,7 @@ def describe_points(
     if pca:
         plt.figure(figsize=(5, 5))
         coords = PCA(n_components=2).fit_transform(points)
-        plt.scatter(coords[:, 0], coords[:, 1])
+        plt.plot(coords[:, 0], coords[:, 1], "-o", lw=0.1, ms=1)
         plt.show()
     if cosine:
         plt.figure(figsize=(5, 5))
