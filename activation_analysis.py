@@ -2,6 +2,7 @@ from typing import Literal, NamedTuple
 
 import circuitsvis
 import einops as ein
+import matplotlib.pyplot as plt
 import torch as t
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,7 +11,7 @@ from beartype.door import die_if_unbearable as assert_type
 from jaxtyping import Bool, Float, Int
 from torch import Tensor as TT
 from tqdm import tqdm
-from transformers import PreTrainedModel, PreTrainedTokenizerBase, GPTNeoForCausalLM
+from transformers import GPTNeoForCausalLM, PreTrainedModel, PreTrainedTokenizerBase
 
 from hooks import Hooks, activation_modifier, activation_saver, get_activations
 from language_modeling import get_logprobs, tokenize
@@ -42,25 +43,25 @@ def qk_to_attention_pattern(
 @typed
 def show_patterns(
     model: PreTrainedModel, tokenizer: PreTrainedTokenizerBase, prompt: str, layer: int
-) -> circuitsvis.attention.RenderedHTML:
+) -> None:  # circuitsvis.attention.RenderedHTML:
     _, activations = get_activations(model, tokenizer, prompt)
     q = activations[f"transformer.h.{layer}.attn.attention.q_proj"].squeeze(0)
     k = activations[f"transformer.h.{layer}.attn.attention.k_proj"].squeeze(0)
     n_heads = model.config.num_heads
     pattern = qk_to_attention_pattern(q, k, n_heads=n_heads)
 
-    # assert n_heads % 4 == 0
-    # plt.figure(figsize=(8, 8))
-    # for head in range(n_heads):
-    #     plt.subplot(n_heads // 4, 4, head + 1)
-    #     plt.gca().set_title(f"Head {head}")
-    #     plt.imshow(pattern[head].detach())
-    #     plt.axis("off")
-    # plt.tight_layout()
-    # plt.show()
+    assert n_heads % 4 == 0
+    plt.figure(figsize=(8, 8))
+    for head in range(n_heads):
+        plt.subplot(n_heads // 4, 4, head + 1)
+        plt.gca().set_title(f"Head {head}")
+        plt.imshow(pattern[head].detach())
+        plt.axis("off")
+    plt.tight_layout()
+    plt.show()
 
-    tokens = tokenizer.tokenize(prompt)
-    return circuitsvis.attention.attention_heads(pattern, tokens)
+    # tokens = tokenizer.tokenize(prompt)
+    # return circuitsvis.attention.attention_heads(pattern, tokens)
 
 
 @typed
